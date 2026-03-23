@@ -3,10 +3,17 @@
 import os
 import json
 import glob
+import argparse
 
 # Folders
-ANNOTATIONS_DIR = "/home/martinez/flower_phenotyping/data/annotations/json"
-OUTPUT_FILE = "instances_coco.json"
+parser = argparse.ArgumentParser()
+parser.add_argument("--input", required=True, help="Input JSON folder")
+parser.add_argument("--out", required=True, help="Output directory")
+parser.add_argument("--val", type=float, default=0.1)
+args = parser.parse_args()
+
+ANNOTATIONS_DIR = args.input
+OUTPUT_DIR = args.out
 
 images = []
 annotations = []
@@ -104,11 +111,15 @@ coco_output = {
     "categories": categories
 }
 
-with open(OUTPUT_FILE, "w") as f:
+os.makedirs(os.path.join(OUTPUT_DIR, "annotations"), exist_ok=True)
+
+output_path = os.path.join(OUTPUT_DIR, "annotations", "instances_train.json")
+
+with open(output_path, "w") as f:
     json.dump(coco_output, f, indent=4)
 
 print("✅ Conversion completed")
-print(f"Imágenes: {len(images)}")
-print(f"Anotaciones: {len(annotations)}")
-print(f"Categorías: {len(categories)}")
-print(f"Archivo generado: {OUTPUT_FILE}")
+print(f"Images: {len(images)}")
+print(f"Annotations: {len(annotations)}")
+print(f"Cathegories: {len(categories)}")
+print(f"Generated file: {output_path}")
