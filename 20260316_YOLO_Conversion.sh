@@ -17,13 +17,13 @@ set -euo pipefail
 ###############################
 
 # Root of your project
-BASE_DIR="/home/martinez/flower_phenotyping/data/"
+BASE_DIR="/home/martinez/flower_phenotyping/data"
 
 # Folder with your original images
 ORI_IMG_DIR="${BASE_DIR}/raw"
 
 #Folder with per-image JSON annotations
-JSON_ANN_DIR="{BASE_DIR}/annotations/json"
+JSON_ANN_DIR="${BASE_DIR}/annotations/json"
 
 # Working directory for YOLO11 dataset + runs
 WORK_DIR="${BASE_DIR}/annotations/YOLO"
@@ -32,15 +32,18 @@ COCO_DIR="${WORK_DIR}/coco_out"
 YOLO_DIR="${WORK_DIR}/yolo_dataset"   # final YOLO-format dataset
 
 # Path to your script that converts per-image JSONs to COCO
-PER_IMAGE_TO_COCO="/home/martinez/flower_phenotyping/src/per_image_jsons_to_coco.py"
+PER_IMAGE_TO_COCO="/home/martinez/flower_phenotyping/src/20260316_per_image_jsons_to_coco.py"
 
 ###############################
 # 2. CLEAN & PREP FOLDERS
 ###############################
 
-echo ">>> Cleaning and preparing working directories..."
+#echo ">>> Cleaning and preparing working directories..."
 rm -rf "${WORK_DIR}"
+mkdir -p "${WORK_DIR}"
 mkdir -p "${RAW_DIR}"
+mkdir -p "${COCO_DIR}"
+mkdir -p "${YOLO_DIR}"
 
 ###############################
 # 3. COPY RAW IMAGES + JSONS
@@ -67,7 +70,7 @@ python "${PER_IMAGE_TO_COCO}" \
    --input "${RAW_DIR}" \
    --out   "${COCO_DIR}" \
    --val   0.1 \
-   --ignore label
+  
 
 # After this you should have:
 #   ${COCO_DIR}/annotations/instances_train.json
@@ -79,6 +82,8 @@ python "${PER_IMAGE_TO_COCO}" \
 ###############################
 
 echo ">>> Converting COCO annotations to YOLO segmentation format..."
+echo ">>> Removing previous YOLO dataset..."
+rm -rf "${YOLO_DIR}"
 
 python - <<PY
 from ultralytics.data.converter import convert_coco
@@ -86,7 +91,7 @@ from ultralytics.data.converter import convert_coco
 convert_coco(
     labels_dir="${COCO_DIR}/annotations",  # folder with instances_train.json / instances_val.json
     save_dir="${YOLO_DIR}",                # where YOLO-style images/ and labels/ will be created
-    use_segments=True                      # segmentation labels (polygons)
+    use_segments=True,                      # segmentation labels (polygons)
 )
 PY
 
@@ -185,11 +190,11 @@ PY
 
 echo ">>> Writing data.yaml..."
 
-cat > "${WORK_DIR}/data.yaml" <<'YAML'
+cat > "${WORK_DIR}/data.yaml" <<YAML
 # YOLO11 segmentation dataset config
 
 # Root of the dataset (where images/ and labels/ live)
-path: /data/martinez/flower_phenotyping/data/annotations/YOLO/yolo_dataset
+path: /home/martinez/flower_phenotyping/data/annotations/YOLO/yolo_dataset
 
 # These are relative to 'path'
 train: images/train
@@ -198,9 +203,8 @@ val: images/val
 # Class names — adjust if COCO had more classes.
 # Background is implicit; do NOT include it.
 names:
-  0: Background
-  1: Plant
-  2: Flower
+  0: Plant
+  1: Flower
 YAML
 
 #
