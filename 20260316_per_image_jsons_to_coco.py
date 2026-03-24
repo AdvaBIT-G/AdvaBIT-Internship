@@ -4,6 +4,7 @@ import os
 import json
 import glob
 import argparse
+import random
 
 # Folders
 parser = argparse.ArgumentParser()
@@ -105,21 +106,55 @@ for json_file in json_files:
 
     image_id += 1
 
-coco_output = {
-    "images": images,
-    "annotations": annotations,
+
+# -------------------------
+# SPLIT TRAIN / VAL
+# -------------------------
+val_ratio = args.val
+
+image_ids = [img["id"] for img in images]
+random.shuffle(image_ids)
+
+# Asegura que haya al menos 1 en validación
+val_size = max(1, int(len(image_ids) * val_ratio))
+
+val_ids = set(image_ids[:val_size])
+train_ids = set(image_ids[val_size:])
+
+def split_dataset(images, annotations, selected_ids):
+    imgs = [img for img in images if img["id"] in selected_ids]
+    anns = [ann for ann in annotations if ann["image_id"] in selected_ids]
+    return imgs, anns
+
+train_images, train_annotations = split_dataset(images, annotations, train_ids)
+val_images, val_annotations = split_dataset(images, annotations, val_ids)
+
+coco_train = {
+    "images": train_images,
+    "annotations": train_annotations,
+    "categories": categories
+}
+
+coco_val = {
+    "images": val_images,
+    "annotations": val_annotations,
     "categories": categories
 }
 
 os.makedirs(os.path.join(OUTPUT_DIR, "annotations"), exist_ok=True)
 
-output_path = os.path.join(OUTPUT_DIR, "annotations", "instances_train.json")
+train_path = os.path.join(OUTPUT_DIR, "annotations", "instances_train.json")
+val_path   = os.path.join(OUTPUT_DIR, "annotations", "instances_val.json")
 
-with open(output_path, "w") as f:
-    json.dump(coco_output, f, indent=4)
+with open(train_path, "w") as f:
+    json.dump(coco_train, f, indent=4)
+
+with open(val_path, "w") as f:
+    json.dump(coco_val, f, indent=4)
 
 print("✅ Conversion completed")
-print(f"Images: {len(images)}")
-print(f"Annotations: {len(annotations)}")
-print(f"Cathegories: {len(categories)}")
-print(f"Generated file: {output_path}")
+print(f"Train images: {len(train_images)}")
+print(f"Val images: {len(val_images)}")
+print(f"Generated:")
+print(f" - {train_path}")
+print(f" - {val_path}")
