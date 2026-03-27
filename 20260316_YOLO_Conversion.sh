@@ -4,7 +4,8 @@ set -euo pipefail
 ###############################
 # 0. ENVIRONMENT (optional)
 ###############################
-# conda activate ultra_env
+#conda init
+#conda activate ultra_env
 
 # If needed (only once):
 # pip install --upgrade pip
@@ -119,7 +120,7 @@ mkdir -p "${YOLO_DIR}/images/train"
 mkdir -p "${YOLO_DIR}/images/val"
 
 ###############################
-# 2. COPY MATCHING IMAGES
+# 6. COPY MATCHING IMAGES
 ###############################
 # For each label file in labels/train and labels/val:
 #   - take the basename (without .txt)
@@ -185,39 +186,123 @@ copy_for_split(labels_val_dir, images_val_dir)
 PY
 
 ###############################
+# 7. CREATE 5-FOLD SPLITS
+###############################
+echo ">>> Creating 5-fold cross-validation splits..."
+python - <<PY
+import os, glob, random, shutil
+
+yolo_dir = r"${YOLO_DIR}"
+fold_base = os.path.join(yolo_dir, "folds")
+os.makedirs(fold_base, exist_ok=True)
+
+all_imgs = glob.glob(os.path.join(yolo_dir, "images", "train", "*.jpg"))
+random.shuffle(all_imgs)
+n_folds = 5
+fold_size = len(all_imgs) // n_folds
+
+for i in range(n_folds):
+    fold_dir = os.path.join(fold_base, f"fold{i+1}")
+    os.makedirs(fold_dir, exist_ok=True)
+    os.makedirs(os.path.join(fold_dir, "images"), exist_ok=True)
+    os.makedirs(os.path.join(fold_dir, "labels"), exist_ok=True)
+
+    val_imgs = all_imgs[i*fold_size:(i+1)*fold_size]
+    train_imgs = [img for img in all_imgs if img not in val_imgs]
+
+    # Copy train + val images and labels
+    for img_path in train_imgs + val_imgs:
+        shutil.copy2(img_path, os.path.join(fold_dir, "images", os.path.basename(img_path)))
+        lbl_name = os.path.splitext(os.path.basename(img_path))[0] + ".txt"
+        lbl_path = os.path.join(yolo_dir, "labels", "train", lbl_name)
+        if os.path.exists(lbl_path):
+            shutil.copy2(lbl_path, os.path.join(fold_dir, "labels", lbl_name))
+
+    # Write data.yaml for this fold
+    yaml_path = os.path.join(fold_dir, "data.yaml")
+    with open(yaml_path, "w") as f:
+        f.write(f"""path: {fold_dir}
+train: images
+val: images
+names:
+  0: Flower
+  1: Plant
+""")
+PY
+
+###############################
+# 8. AUTOMATIC GRID SEARCH PER FOLD
+###############################
+echo ">>> Starting grid search for 5-fold CV..."
+
+# Define hyperparameter grid
+IMG_SIZES=(416 512)
+BATCH_SIZES=(2 4)
+LEARNING_RATES=(0.001 0.002)
+EPOCHS=(100 150)
+
+for img in "${IMG_SIZES[@]}"; do
+  for batch in "${BATCH_SIZES[@]}"; do
+    for lr in "${LEARNING_RATES[@]}"; do
+      for epoch in "${EPOCHS[@]}"; do
+        run_name="img${img}_batch${batch}_lr${lr}_ep${epoch}"
+        echo ">>> Training combination $run_name"
+
+        for fold in {1..5}; do
+          echo "Fold $fold..."
+          yolo task=segment mode=train \
+               model=yolo11n-seg.pt \
+               data="${YOLO_DIR}/folds/fold${fold}/data.yaml" \
+               imgsz="$img" \
+               batch="$batch" \
+               lr0="$lr" \
+               epochs="$epoch" \
+               project="${WORK_DIR}/runs" \
+               name="${run_name}_fold${fold}"
+        done
+      done
+    done
+  done
+done
+
+echo ">>> Grid search + 5-fold CV finished. Check runs in ${WORK_DIR}/runs"
+
+###############################
 # 3. WRITE data.yaml
 ###############################
 
-echo ">>> Writing data.yaml..."
+#echo ">>> Writing data.yaml..."
 
-cat > "${WORK_DIR}/data.yaml" <<YAML
+#cat > "${WORK_DIR}/data.yaml" <<YAML
 # YOLO11 segmentation dataset config
 
 # Root of the dataset (where images/ and labels/ live)
-path: /home/martinez/flower_phenotyping/data/annotations/YOLO/yolo_dataset
+#path: /home/martinez/flower_phenotyping/data/annotations/YOLO/yolo_dataset
 
 # These are relative to 'path'
-train: images/train
-val: images/val
+#train: images/train
+#val: images/val
 
 # Class names — adjust if COCO had more classes.
 # Background is implicit; do NOT include it.
-names:
-  0: Plant
-  1: Flower
-YAML
+#names:
+  #0: Flower
+  #1: Plant
+#YAML
 
 #
-echo ">>> Starting YOLO11 segmentation training..."
+#echo ">>> Starting YOLO11 segmentation training..."
 
-cd "${BASE_DIR}"
+#cd "${BASE_DIR}"
 
-yolo task=segment mode=train \
-     model=yolo11n-seg.pt \
-     data="${WORK_DIR}/data.yaml" \
-     imgsz=1028 \
-     epochs=200 \
-     project="${WORK_DIR}/runs" \
-     name="train_plant_seg"
+#yolo task=segment mode=train \
+     #model=yolo11n-seg.pt \
+     #data="${WORK_DIR}/data.yaml" \
+     #imgsz=416 \
+     #epochs=100 \
+     #batch=2\
+     #lr0=0.001\
+     #project="${WORK_DIR}/runs" \
+     #name="train_plant_seg"
 
-echo ">>> Training finished. Check runs in: ${WORK_DIR}/runs"
+#echo ">>> Training finished. Check runs in: ${WORK_DIR}/runs"
