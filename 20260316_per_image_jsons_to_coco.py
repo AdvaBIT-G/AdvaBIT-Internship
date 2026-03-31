@@ -1,160 +1,215 @@
 #!/usr/bin/python3
-
 import os
 import json
 import glob
 import argparse
 import random
+import math
+import shutil
+from pathlib import Path
+from shapely.geometry import Polygon
+from shapely.ops import unary_union
+from shapely.validation import make_valid
 
-# Folders
+# ------------------------
+# ARGUMENTOS
+# ------------------------
 parser = argparse.ArgumentParser()
-parser.add_argument("--input", required=True, help="Input JSON folder")
-parser.add_argument("--out", required=True, help="Output directory")
+parser.add_argument("--input", required=True)
+parser.add_argument("--out", required=True)
+parser.add_argument("--images", required=True)
 parser.add_argument("--val", type=float, default=0.1)
+parser.add_argument("--tolerance", type=float, default=2.0)
 args = parser.parse_args()
 
 ANNOTATIONS_DIR = args.input
 OUTPUT_DIR = args.out
+IMAGES_DIR = args.images
+SIMPLIFY_TOL = args.tolerance
 
-images = []
-annotations = []
-categories = []
-category_map = {}
+# 🔧 NUEVO: filtros
+MIN_AREA = 20        # eliminar ruido pequeño
+MIN_FRAGMENT = 50    # tras difference()
+MAX_POINTS = 300
 
-annotation_id = 1
-image_id = 1
+CATEGORY_MAP = {"flower": 0, "plant": 1}
 
-def convert_segmentation(points):
-    """Converts [[x,y],[x,y]] -> [x1,y1,x2,y2,...]"""
-    flat = []
-    for x, y in points:
-        flat.extend([x, y])
-    return flat
+# ------------------------
+# HELPERS
+# ------------------------
+def is_valid_coord(x, y):
+    try:
+        return x is not None and y is not None and math.isfinite(x) and math.isfinite(y)
+    except:
+        return False
 
+def safe_polygon(geom):
+    if geom is None or geom.is_empty:
+        return None
+    if not geom.is_valid:
+        geom = make_valid(geom)
+    if geom is None or geom.is_empty:
+        return None
+    return geom.buffer(0)  # 🔥 extra fix geométrico
 
-def compute_bbox(points):
-    xs = [p[0] for p in points]
-    ys = [p[1] for p in points]
+def simplify_polygon(poly, tolerance, max_points):
+    if poly.area < MIN_AREA:
+        return None
 
-    x_min = min(xs)
-    y_min = min(ys)
-    x_max = max(xs)
-    y_max = max(ys)
+    tol = tolerance
+    simplified = poly.simplify(tol, preserve_topology=True)
 
-    width = x_max - x_min
-    height = y_max - y_min
+    # 🔧 evitar destruir demasiado
+    if simplified.area < 0.5 * poly.area:
+        return poly
 
-    return [x_min, y_min, width, height]
+    while len(simplified.exterior.coords) > max_points and tol < tolerance * 50:
+        tol *= 1.5
+        simplified = poly.simplify(tol, preserve_topology=True)
 
+    if simplified.is_empty:
+        return poly
 
-json_files = glob.glob(os.path.join(ANNOTATIONS_DIR, "*.json"))
+    return simplified
+
+def extract_polygons(geom):
+    if geom is None or geom.is_empty:
+        return []
+    if geom.geom_type == "Polygon":
+        return [geom]
+    if geom.geom_type == "MultiPolygon":
+        return list(geom.geoms)
+    return []
+
+def polygon_to_yolo_line(p, img_w, img_h, class_id):
+    p = simplify_polygon(p, SIMPLIFY_TOL, MAX_POINTS)
+    if p is None:
+        return None
+
+    coords = [(x, y) for x, y in p.exterior.coords if is_valid_coord(x, y)]
+    if len(coords) < 3:
+        return None
+
+    normalized = []
+    for x, y in coords:
+        nx = max(0.0, min(1.0, round(x / img_w, 6)))
+        ny = max(0.0, min(1.0, round(y / img_h, 6)))
+        normalized.extend([nx, ny])
+
+    return str(class_id) + " " + " ".join(map(str, normalized))
+
+# ------------------------
+# DIRS
+# ------------------------
+for split in ["train", "val"]:
+    Path(f"{OUTPUT_DIR}/images/{split}").mkdir(parents=True, exist_ok=True)
+    Path(f"{OUTPUT_DIR}/labels/{split}").mkdir(parents=True, exist_ok=True)
+
+# ------------------------
+# PROCESS
+# ------------------------
+json_files = sorted(glob.glob(os.path.join(ANNOTATIONS_DIR, "*.json")))
+print(f"Encontrados {len(json_files)} JSONs\n")
+
+all_entries = []
+skipped = 0
 
 for json_file in json_files:
-    with open(json_file, "r") as f:
+    with open(json_file) as f:
         data = json.load(f)
 
     info = data.get("info", {})
     objects = data.get("objects", [])
 
-    file_name = info.get("name")
     width = info.get("width")
     height = info.get("height")
+    file_name = info.get("name", "")
 
-    images.append({
-        "id": image_id,
-        "file_name": file_name,
-        "width": width,
-        "height": height
-    })
+    if not width or not height:
+        continue
+
+    flowers = []
+    plants = []
 
     for obj in objects:
+        pts = obj.get("segmentation", [])
+        if len(pts) < 3:
+            continue
 
-        category_name = obj["category"]
+        poly = safe_polygon(Polygon(pts))
+        if poly is None:
+            skipped += 1
+            continue
 
-        # Crear categoría si no existe
-        if category_name not in category_map:
-            category_id = len(category_map) + 1
-            category_map[category_name] = category_id
+        if obj["category"].lower() == "flower":
+            flowers.extend(extract_polygons(poly))
+        else:
+            plants.extend(extract_polygons(poly))
 
-            categories.append({
-                "id": category_id,
-                "name": category_name,
-                "supercategory": "object"
-            })
+    flower_union = safe_polygon(unary_union(flowers)) if flowers else None
 
-        category_id = category_map[category_name]
+    yolo_lines = []
 
-        points = obj["segmentation"]
-        segmentation = [convert_segmentation(points)]
-        bbox = compute_bbox(points)
-        area = bbox[2] * bbox[3]
+    # 🌱 PLANTS
+    for plant in plants:
+        try:
+            diff = plant.difference(flower_union) if flower_union else plant
+            diff = safe_polygon(diff)
+        except:
+            diff = plant
 
-        # Calcular área si no existe
-        area = obj.get("area", bbox[2] * bbox[3] if bbox else 0)
+        for p in extract_polygons(diff):
+            if p.area < MIN_FRAGMENT:
+                continue
+            line = polygon_to_yolo_line(p, width, height, 1)
+            if line:
+                yolo_lines.append(line)
 
-        annotations.append({
-            "id": annotation_id,
-            "image_id": image_id,
-            "category_id": category_id,
-            "segmentation": segmentation,
-            "bbox": bbox,
-            "area": area,
-            "iscrowd": 0
-        })
+    # 🌸 FLOWERS
+    for fpoly in flowers:
+        if fpoly.area < MIN_AREA:
+            continue
+        line = polygon_to_yolo_line(fpoly, width, height, 0)
+        if line:
+            yolo_lines.append(line)
 
-        annotation_id += 1
+    stem = Path(file_name).stem if file_name else Path(json_file).stem
+    all_entries.append((json_file, stem, yolo_lines))
 
-    image_id += 1
+# ------------------------
+# SPLIT
+# ------------------------
+random.shuffle(all_entries)
+val_size = max(1, int(len(all_entries) * args.val))
+val_entries = all_entries[:val_size]
+train_entries = all_entries[val_size:]
 
+def write(entries, split):
+    miss = 0
+    for _, stem, lines in entries:
+        img = None
+        for ext in [".jpg", ".png", ".jpeg"]:
+            p = os.path.join(IMAGES_DIR, stem + ext)
+            if os.path.exists(p):
+                img = p
+                break
 
-# -------------------------
-# SPLIT TRAIN / VAL
-# -------------------------
-val_ratio = args.val
+        if img:
+            shutil.copy2(img, f"{OUTPUT_DIR}/images/{split}/{os.path.basename(img)}")
+        else:
+            miss += 1
 
-image_ids = [img["id"] for img in images]
-random.shuffle(image_ids)
+        with open(f"{OUTPUT_DIR}/labels/{split}/{stem}.txt", "w") as f:
+            f.write("\n".join(lines))
 
-# Asegura que haya al menos 1 en validación
-val_size = max(1, int(len(image_ids) * val_ratio))
+    return miss
 
-val_ids = set(image_ids[:val_size])
-train_ids = set(image_ids[val_size:])
+print("Escribiendo train...")
+m1 = write(train_entries, "train")
+print("Escribiendo val...")
+m2 = write(val_entries, "val")
 
-def split_dataset(images, annotations, selected_ids):
-    imgs = [img for img in images if img["id"] in selected_ids]
-    anns = [ann for ann in annotations if ann["image_id"] in selected_ids]
-    return imgs, anns
-
-train_images, train_annotations = split_dataset(images, annotations, train_ids)
-val_images, val_annotations = split_dataset(images, annotations, val_ids)
-
-coco_train = {
-    "images": train_images,
-    "annotations": train_annotations,
-    "categories": categories
-}
-
-coco_val = {
-    "images": val_images,
-    "annotations": val_annotations,
-    "categories": categories
-}
-
-os.makedirs(os.path.join(OUTPUT_DIR, "annotations"), exist_ok=True)
-
-train_path = os.path.join(OUTPUT_DIR, "annotations", "instances_train.json")
-val_path   = os.path.join(OUTPUT_DIR, "annotations", "instances_val.json")
-
-with open(train_path, "w") as f:
-    json.dump(coco_train, f, indent=4)
-
-with open(val_path, "w") as f:
-    json.dump(coco_val, f, indent=4)
-
-print("✅ Conversion completed")
-print(f"Train images: {len(train_images)}")
-print(f"Val images: {len(val_images)}")
-print(f"Generated:")
-print(f" - {train_path}")
-print(f" - {val_path}")
+print("\n✅ DONE")
+print(f"Train: {len(train_entries)} | Val: {len(val_entries)}")
+print(f"⚠️ polígonos inválidos: {skipped}")
+print(f"⚠️ imágenes faltantes: {m1 + m2}")
