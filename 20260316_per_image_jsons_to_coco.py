@@ -12,7 +12,7 @@ from shapely.ops import unary_union
 from shapely.validation import make_valid
 
 # ------------------------
-# ARGUMENTOS
+# ARGUMENTS
 # ------------------------
 parser = argparse.ArgumentParser()
 parser.add_argument("--input", required=True)
@@ -27,10 +27,10 @@ OUTPUT_DIR = args.out
 IMAGES_DIR = args.images
 SIMPLIFY_TOL = args.tolerance
 
-# 🔧 NUEVO: filtros
-MIN_AREA = 20        # eliminar ruido pequeño
-MIN_FRAGMENT = 50    # tras difference()
-MAX_POINTS = 300
+# 🔧 fILTERS
+MIN_AREA = 200        # Remove noise
+MIN_FRAGMENT = 500    
+MAX_POINTS = 100
 
 CATEGORY_MAP = {"flower": 0, "plant": 1}
 
@@ -50,7 +50,7 @@ def safe_polygon(geom):
         geom = make_valid(geom)
     if geom is None or geom.is_empty:
         return None
-    return geom.buffer(0)  # 🔥 extra fix geométrico
+    return geom.buffer(0) 
 
 def simplify_polygon(poly, tolerance, max_points):
     if poly.area < MIN_AREA:
@@ -59,7 +59,7 @@ def simplify_polygon(poly, tolerance, max_points):
     tol = tolerance
     simplified = poly.simplify(tol, preserve_topology=True)
 
-    # 🔧 evitar destruir demasiado
+    # 🔧 avoid destroying too much
     if simplified.area < 0.5 * poly.area:
         return poly
 
@@ -109,7 +109,7 @@ for split in ["train", "val"]:
 # PROCESS
 # ------------------------
 json_files = sorted(glob.glob(os.path.join(ANNOTATIONS_DIR, "*.json")))
-print(f"Encontrados {len(json_files)} JSONs\n")
+print(f"Found {len(json_files)} JSONs\n")
 
 all_entries = []
 skipped = 0
@@ -152,11 +152,9 @@ for json_file in json_files:
 
     # 🌱 PLANTS
     for plant in plants:
-        try:
-            diff = plant.difference(flower_union) if flower_union else plant
-            diff = safe_polygon(diff)
-        except:
-            diff = plant
+        diff = plant
+        diff = safe_polygon(diff)
+        
 
         for p in extract_polygons(diff):
             if p.area < MIN_FRAGMENT:
@@ -204,12 +202,12 @@ def write(entries, split):
 
     return miss
 
-print("Escribiendo train...")
+print("Writing train...")
 m1 = write(train_entries, "train")
-print("Escribiendo val...")
+print("Writing val...")
 m2 = write(val_entries, "val")
 
 print("\n✅ DONE")
 print(f"Train: {len(train_entries)} | Val: {len(val_entries)}")
-print(f"⚠️ polígonos inválidos: {skipped}")
-print(f"⚠️ imágenes faltantes: {m1 + m2}")
+print(f"⚠️ invalid polygons: {skipped}")
+print(f"⚠️ images not included: {m1 + m2}")
