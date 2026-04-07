@@ -32,7 +32,7 @@ MIN_AREA = 200        # Remove noise
 MIN_FRAGMENT = 500    
 MAX_POINTS = 100
 
-CATEGORY_MAP = {"flower": 0, "plant": 1}
+CATEGORY_MAP = {"flower": 0}
 
 # ------------------------
 # HELPERS
@@ -129,11 +129,12 @@ for json_file in json_files:
         continue
 
     flowers = []
-    plants = []
 
     for obj in objects:
         pts = obj.get("segmentation", [])
         if len(pts) < 3:
+            continue
+        if obj["category"].lower() != "flower":
             continue
 
         poly = safe_polygon(Polygon(pts))
@@ -141,27 +142,10 @@ for json_file in json_files:
             skipped += 1
             continue
 
-        if obj["category"].lower() == "flower":
-            flowers.extend(extract_polygons(poly))
-        else:
-            plants.extend(extract_polygons(poly))
+        flowers.extend(extract_polygons(poly))
 
-    flower_union = safe_polygon(unary_union(flowers)) if flowers else None
 
     yolo_lines = []
-
-    # 🌱 PLANTS
-    for plant in plants:
-        diff = plant
-        diff = safe_polygon(diff)
-        
-
-        for p in extract_polygons(diff):
-            if p.area < MIN_FRAGMENT:
-                continue
-            line = polygon_to_yolo_line(p, width, height, 1)
-            if line:
-                yolo_lines.append(line)
 
     # 🌸 FLOWERS
     for fpoly in flowers:

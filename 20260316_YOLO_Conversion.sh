@@ -98,10 +98,9 @@ path: ${YOLO_DIR}
 train: images/train
 val:   images/val
 
-# 0 y 1 must be the same as in CATEGORY_MAP in 20260316_per_image_jsons_to_coco.py
+# 0 must be the same as in CATEGORY_MAP in 20260316_per_image_jsons_to_coco.py
 names:
   0: Flower
-  1: Plant
 YAML
 
 ###############################
@@ -112,11 +111,15 @@ echo ">>> Starting training YOLO11 segmentation..."
 
 cd "${BASE_DIR}"
 
-yolo task=segment mode=predict \
-     model="/home/martinez/flower_phenotyping/data/runs/segment/train/weights/best.pt" \
-     source="/home/martinez/flower_phenotyping/Series04" \
-     save=True \
-     save_txt=True\
-     conf=0.6
+yolo task=segment mode=train \
+     model=yolo11s-seg.pt \
+     data="${WORK_DIR}/data.yaml" \
+     imgsz=640 \ 
+     epochs=100 \ 
+     batch=2 \ 
+     lr0=0.01 \ 
+     patience=20 \ 
+     project="${WORK_DIR}/runs" \ 
+     name="train_plant_seg" 
 
 echo ">>> Training finished. Results in: ${WORK_DIR}/runs"
