@@ -58,6 +58,7 @@ def run_slice(
         overlap_height_ratio=overlap_h,
         overlap_width_ratio=overlap_w,
         ignore_negative_samples=ignore_negatives,
+        out_ext=".jpg",
     )
  
     log.info("Done: %s", output_dir)
