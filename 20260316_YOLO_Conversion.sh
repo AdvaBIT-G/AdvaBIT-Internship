@@ -164,6 +164,7 @@ yolo task=segment mode=train \
     imgsz=640 \
     epochs=100 \
     batch=2 \
+    patience=30 \
     project="${WORK}/runs" \
     name="train_clean"
 
