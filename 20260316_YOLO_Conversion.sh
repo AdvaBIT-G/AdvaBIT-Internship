@@ -35,7 +35,9 @@ python "${COCO_SCRIPT}" \
     --input "${RAW}" \
     --out "${COCO}" \
     --val 0.1 \
-    --seed 42
+    --seed 42 \
+    --area-thr \
+    --min-points
 
 # ─── CLEAN COCO ──────────────────────────────────────────────────────────────
 log "Cleaning COCO..."
@@ -163,7 +165,11 @@ yolo task=segment mode=train \
     data="${WORK}/data.yaml" \
     imgsz=640 \
     epochs=100 \
-    batch=2 \
+    batch=16 \
+    accumulate=2 \
+    amp=True \
+    workers=6 \
+    cache=False \
     patience=30 \
     project="${WORK}/runs" \
     name="train_clean"
