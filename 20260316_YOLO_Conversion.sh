@@ -36,8 +36,7 @@ python "${COCO_SCRIPT}" \
     --out "${COCO}" \
     --val 0.1 \
     --seed 42 \
-    --area-thr \
-    --min-points
+
 
 # ─── CLEAN COCO ──────────────────────────────────────────────────────────────
 log "Cleaning COCO..."
