@@ -122,6 +122,46 @@ for split in train val; do
         -exec cp {} "${YOLO}/images/${split}/" \;
 done
 
+# ─── FILTER BACKGROUND ───────────────────────────────────────────────────────
+log "Filtering background images..."
+
+python - << 'PY'
+import random
+from pathlib import Path
+
+random.seed(42)
+
+YOLO = Path("${YOLO}")
+
+img_dir = YOLO / "images/train"
+lbl_dir = YOLO / "labels/train"
+
+images = list(img_dir.glob("*.jpg"))
+
+bg = []
+fg = []
+
+for img in images:
+    label = lbl_dir / f"{img.stem}.txt"
+    if label.exists():
+        fg.append(img)
+    else:
+        bg.append(img)
+
+print(f"Before → FG: {len(fg)} | BG: {len(bg)}")
+
+# 👉 objetivo: 40% de background respecto a foreground
+target_bg = int(len(fg) * 0.4)
+
+if len(bg) > target_bg:
+    remove_n = len(bg) - target_bg
+    to_remove = random.sample(bg, remove_n)
+b
+    for img in to_remove:
+        img.unlink()
+
+print(f"After → FG: {len(fg)} | BG: {target_bg}")
+PY
 # ─── DATA.YAML ───────────────────────────────────────────────────────────────
 log "Writing data.yaml..."
 
@@ -164,7 +204,7 @@ yolo task=segment mode=train \
     data="${WORK}/data.yaml" \
     imgsz=640 \
     epochs=100 \
-    batch=24 \
+    batch=32 \
     amp=True \
     workers=6 \
     cache=False \
