@@ -136,31 +136,64 @@ YOLO = Path("${YOLO}")
 img_dir = YOLO / "images/train"
 lbl_dir = YOLO / "labels/train"
 
-images = list(img_dir.glob("*.jpg"))
+# ⚙️ Ajustes
+MIN_AREA = 0.002   # mantener flores pequeñas
+EDGE_MARGIN = 0.02
+BG_RATIO = 0.4     # 40% de background respecto a foreground
 
-bg = []
-fg = []
+fg_imgs = []
+bg_imgs = []
 
-for img in images:
-    label = lbl_dir / f"{img.stem}.txt"
-    if label.exists():
-        fg.append(img)
+# 🔍 Paso 1: limpiar labels
+for img_path in img_dir.glob("*.jpg"):
+    label_path = lbl_dir / f"{img_path.stem}.txt"
+
+    if not label_path.exists():
+        bg_imgs.append(img_path)
+        continue
+
+    valid_lines = []
+
+    with open(label_path, "r") as f:
+        for line in f:
+            cls, x, y, w, h = map(float, line.split())
+            area = w * h
+
+            # ❌ demasiado pequeña
+            if area < MIN_AREA:
+                continue
+
+            # ❌ en bordes (mal slice)
+            if x < EDGE_MARGIN or x > 1 - EDGE_MARGIN:
+                continue
+            if y < EDGE_MARGIN or y > 1 - EDGE_MARGIN:
+                continue
+
+            valid_lines.append(line)
+
+    if len(valid_lines) == 0:
+        # se convierte en background
+        label_path.unlink(missing_ok=True)
+        bg_imgs.append(img_path)
     else:
-        bg.append(img)
+        # guardar limpio
+        with open(label_path, "w") as f:
+            f.writelines(valid_lines)
+        fg_imgs.append(img_path)
 
-print(f"Before → FG: {len(fg)} | BG: {len(bg)}")
+print(f"Después de limpiar → FG: {len(fg_imgs)} | BG: {len(bg_imgs)}")
 
-# 👉 objetivo: 40% de background respecto a foreground
-target_bg = int(len(fg) * 0.4)
+# 🎯 Paso 2: balancear background
+target_bg = int(len(fg_imgs) * BG_RATIO)
 
-if len(bg) > target_bg:
-    remove_n = len(bg) - target_bg
-    to_remove = random.sample(bg, remove_n)
-b
+if len(bg_imgs) > target_bg:
+    remove_n = len(bg_imgs) - target_bg
+    to_remove = random.sample(bg_imgs, remove_n)
+
     for img in to_remove:
         img.unlink()
 
-print(f"After → FG: {len(fg)} | BG: {target_bg}")
+print(f"Final → FG: {len(fg_imgs)} | BG: {target_bg}")
 PY
 # ─── DATA.YAML ───────────────────────────────────────────────────────────────
 log "Writing data.yaml..."
@@ -204,7 +237,7 @@ yolo task=segment mode=train \
     data="${WORK}/data.yaml" \
     imgsz=640 \
     epochs=100 \
-    batch=32 \
+    batch=24 \
     amp=True \
     workers=6 \
     cache=False \
