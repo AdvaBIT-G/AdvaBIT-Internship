@@ -6,7 +6,7 @@ BASE="/home/martinez/flower_phenotyping/data"
 WORK="${BASE}/annotations/YOLO"
 
 RAW_ORI="${BASE}/raw"
-JSON_ORI="${BASE}/annotations/json"
+JSON_ORI="${BASE}/annotations/new_json"
 
 RAW="${WORK}/raw_data"
 COCO="${WORK}/coco_out"
@@ -52,7 +52,7 @@ log "Running SAHI..."
 python "${SAHI_SCRIPT}" \
    --base "${WORK}" \
    --overlap-h 0.2 \
-   --overlap-w 0.2
+   --overlap-w 0.2 \
 
 # ─── NORMALISE SAHI JSON ─────────────────────────────────────────────────────
 log "Normalising SAHI output..."
@@ -255,12 +255,12 @@ yolo task=segment mode=train \
     model=yolo11s-seg.pt \
     data="${WORK}/data.yaml" \
     imgsz=640 \
-    epochs=50 \
+    epochs=200 \
     batch=16 \
     amp=True \
     workers=6 \
     cache=False \
-    patience=30 \
+    patience=150 \
     mosaic=0.5 \
     translate=0.3 \
     scale=0.6 \
