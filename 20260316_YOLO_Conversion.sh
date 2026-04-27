@@ -256,7 +256,7 @@ yolo task=segment mode=train \
     data="${WORK}/data.yaml" \
     imgsz=640 \
     epochs=200 \
-    batch=16 \
+    batch=24 \
     amp=True \
     workers=6 \
     cache=False \
