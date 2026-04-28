@@ -1,79 +1,66 @@
 import os
 import random
-import cv2
-import numpy as np
 import shutil
 
-img_dir = "/home/martinez/flower_phenotyping/data/raw"
-mask_dir = "/home/martinez/flower_phenotyping/src/runs/segment/predict"
+#Remove images without json files associated.
+raw_dir = "/home/martinez/flower_phenotyping/data/annotations/YOLO/raw_data"
 
-out_img = "/home/martinez/flower_phenotyping/results/metrics/groundTruth/images"
-out_mask = "/home/martinez/flower_phenotyping/results/metrics/groundTruth/masks"
+files = os.listdir(raw_dir)
 
-os.makedirs(out_img, exist_ok=True)
-os.makedirs(out_mask, exist_ok=True)
+# separate by type
+images = [f for f in files if f.endswith((".jpg", ".png"))]
+jsons = set(f.replace(".json", "") for f in files if f.endswith(".json"))
 
-files = sorted(os.listdir(mask_dir))
+deleted = 0
 
-# -----------------------
-# 1. RANDOM (80)
-# -----------------------
-random_sample = random.sample(files, 80)
+for img in images:
+    name = os.path.splitext(img)[0]
+    
+    if name not in jsons:
+        path = os.path.join(raw_dir, img)
+        os.remove(path)
+        deleted += 1
+        print(f"Removed: {img}")
 
-# -----------------------
-# 2. MASK SIZES
-# -----------------------
-areas = []
-for f in files:
-    mask = cv2.imread(os.path.join(mask_dir, f), 0)
-    area = (mask > 0).sum()
-    areas.append((f, area))
+print(f"Total removed: {deleted}")
 
-areas_sorted = sorted(areas, key=lambda x: x[1])
+all_img_dir = "/home/martinez/flower_phenotyping/data/raw"
+train_dir = "/home/martinez/flower_phenotyping/data/annotations/YOLO/raw_data"
 
-small = [f for f, _ in areas_sorted[:25]]
-large = [f for f, _ in areas_sorted[-25:]]
+out_dir = "/home/martinez/flower_phenotyping/results/metrics/groundTruth/images"
 
-# -----------------------
-# 3. COMPLEXITY (components)
-# -----------------------
-def num_components(mask):
-    _, labels = cv2.connectedComponents(mask.astype(np.uint8))
-    return labels
-
-complex_cases = []
-for f in files:
-    mask = cv2.imread(os.path.join(mask_dir, f), 0)
-    mask_bin = mask > 0
-    comps = num_components(mask_bin)
-    complex_cases.append((f, comps))
-
-complex_sorted = sorted(complex_cases, key=lambda x: x[1], reverse=True)
-complex_top = [f for f, _ in complex_sorted[:20]]
+os.makedirs(out_dir, exist_ok=True)
 
 # -----------------------
-# 4. JOIN ALL
+# LIST OF FILES
 # -----------------------
-selected = set()
-selected.update(random_sample)
-selected.update(small)
-selected.update(large)
-selected.update(complex_top)
+all_imgs = set(os.listdir(all_img_dir))
+train_imgs = set(os.listdir(train_dir))
+print("All:", len(all_imgs))
+print("Train:", len(train_imgs))
+# Exclude images from training
+candidates = list(all_imgs - train_imgs)
 
-selected = list(selected)[:150]
-
-print("Seleccionadas:", len(selected))
+print("Images available for ground truth:", len(candidates))
 
 # -----------------------
-# 5. COPY FILES
+# RANDOM SELECTION
 # -----------------------
-for f in selected:
-    img_name = f.replace(".png", ".jpg")  # ajusta si es png/jpg
+N = 150
 
-    shutil.copy(os.path.join(img_dir, img_name),
-                os.path.join(out_img, img_name))
+if len(candidates) < N:
+    raise ValueError(f"Not enough images ({len(candidates)})")
 
-    shutil.copy(os.path.join(mask_dir, f),
-                os.path.join(out_mask, f))
+selected = random.sample(candidates, N)
 
-print("Dataset ready in /home/martinez/flower_phenotyping/results/metrics/groundTruth")
+print("Selected:", len(selected))
+
+# -----------------------
+# COPY
+# -----------------------
+for img in selected:
+    src = os.path.join(all_img_dir, img)
+    dst = os.path.join(out_dir, img)
+    shutil.copy(src, dst)
+
+print("Images copied to:", out_dir)
