@@ -1,6 +1,6 @@
 import os
 
-origin_folder = "/home/martinez/flower_phenotyping/Series04"
+origin_folder = "/home/martinez/flower_phenotyping/results/metrics/groundTruth/images"
 new_folder = "/home/martinez/flower_phenotyping/data/raw"
 
 # Obtain file names 
