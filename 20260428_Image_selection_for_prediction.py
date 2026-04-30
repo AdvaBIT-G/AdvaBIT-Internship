@@ -3,8 +3,8 @@ import shutil
 
 # Folders
 origin_folder = "/home/martinez/flower_phenotyping/data/raw"
-json_folder = "/home/martinez/flower_phenotyping/data/annotations/YOLO/raw_data"
-new_folder = "/home/martinez/flower_phenotyping/data/annotations/YOLO/Predict_images"
+json_folder = "/home/martinez/flower_phenotyping/data/YOLO/raw_data"
+new_folder = "/home/martinez/flower_phenotyping/data/YOLO/Images_to_predict"
 
 # Create new folder if it does not exist
 os.makedirs(new_folder, exist_ok=True)
