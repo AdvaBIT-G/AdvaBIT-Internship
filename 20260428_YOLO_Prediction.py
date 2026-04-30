@@ -3,17 +3,17 @@ import os
 import cv2
 import numpy as np
 
-model = YOLO("/home/martinez/flower_phenotyping/data/annotations/YOLO/runs/train_clean/weights/best.pt")
+model = YOLO("/home/martinez/flower_phenotyping/models/yolo/weights/best.pt")
 
 results = model.predict(
-    source="/home/martinez/flower_phenotyping/data/annotations/YOLO/Predict_images",
+    source="/home/martinez/flower_phenotyping/data/YOLO/Images_to_predict",
     imgsz=1024,
     conf=0.3,
     save=True  
 )
 
 # folder for masks
-mask_dir = "./pred_masks"
+mask_dir = "/home/martinez/flower_phenotyping/results/YOLO/pred_masks"
 os.makedirs(mask_dir, exist_ok=True)
 
 for r in results:
