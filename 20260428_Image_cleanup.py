@@ -1,8 +1,8 @@
 import os
 
 # Folders
-png_folder = "/home/martinez/flower_phenotyping/results/metrics/groundTruth/gt_masks"
-jpg_folder = "/home/martinez/flower_phenotyping/data/annotations/YOLO/Predict_images"
+png_folder = "/home/martinez/flower_phenotyping/results/YOLO/groundTruth/png_masks"
+jpg_folder = "/home/martinez/flower_phenotyping/data/YOLO/Images_to_predict"
 
 # Obtain names of the .png files
 png_names = {
