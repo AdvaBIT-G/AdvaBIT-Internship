@@ -3,7 +3,7 @@ set -euo pipefail
 
 # ─── PATHS ───────────────────────────────────────────────────────────────────
 BASE="/home/martinez/flower_phenotyping/data"
-WORK="${BASE}/annotations/YOLO"
+WORK="${BASE}/YOLO"
 
 RAW_ORI="${BASE}/raw"
 JSON_ORI="${BASE}/annotations/new_json"
@@ -228,7 +228,7 @@ val: images/val
 
 nc: 1
 names:
-  0: flor
+  0: flower
 """)
 PY
 
@@ -252,7 +252,7 @@ grep -r " 1 " "${YOLO}/labels/train" || true
 log "Starting training..."
 
 yolo task=segment mode=train \
-    model=yolo11s-seg.pt \
+    model=/home/martinez/flower_phenotyping/data/YOLO/yolo11s-seg.pt \
     data="${WORK}/data.yaml" \
     imgsz=640 \
     epochs=200 \
