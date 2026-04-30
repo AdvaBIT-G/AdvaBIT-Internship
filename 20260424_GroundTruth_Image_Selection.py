@@ -2,32 +2,11 @@ import os
 import random
 import shutil
 
-#Remove images without json files associated.
-raw_dir = "/home/martinez/flower_phenotyping/data/annotations/YOLO/raw_data"
-
-files = os.listdir(raw_dir)
-
-# separate by type
-images = [f for f in files if f.endswith((".jpg", ".png"))]
-jsons = set(f.replace(".json", "") for f in files if f.endswith(".json"))
-
-deleted = 0
-
-for img in images:
-    name = os.path.splitext(img)[0]
-    
-    if name not in jsons:
-        path = os.path.join(raw_dir, img)
-        os.remove(path)
-        deleted += 1
-        print(f"Removed: {img}")
-
-print(f"Total removed: {deleted}")
 
 all_img_dir = "/home/martinez/flower_phenotyping/data/raw"
-train_dir = "/home/martinez/flower_phenotyping/data/annotations/YOLO/raw_data"
+train_dir = "/home/martinez/flower_phenotyping/data/YOLO/raw_data"
 
-out_dir = "/home/martinez/flower_phenotyping/results/metrics/groundTruth/images"
+out_dir = "/home/martinez/flower_phenotyping/results/YOLO/groundTruth/images"
 
 os.makedirs(out_dir, exist_ok=True)
 
