@@ -5,11 +5,11 @@ import numpy as np
 # =========================
 # PATHS
 # =========================
-gt_dir = "/home/martinez/flower_phenotyping/results/metrics/groundTruth/gt_masks"
-pred_dir = "/home/martinez/flower_phenotyping/src/runs/segment/predict"
+gt_dir = "/home/martinez/flower_phenotyping/results/metrics/groundTruth/png_masks"
+pred_dir = "/home/martinez/flower_phenotyping/src/pred_masks" 
 
 # =========================
-# METRICS
+# METRICS STORAGE
 # =========================
 ious = []
 dices = []
@@ -17,7 +17,7 @@ precisions = []
 recalls = []
 
 # =========================
-# LOOP GT
+# LOOP
 # =========================
 for file in os.listdir(gt_dir):
 
@@ -25,17 +25,14 @@ for file in os.listdir(gt_dir):
         continue
 
     gt_path = os.path.join(gt_dir, file)
-
-    # pred is JPG (same base name)
-    pred_file = file.replace(".png", ".jpg")
-    pred_path = os.path.join(pred_dir, pred_file)
+    pred_path = os.path.join(pred_dir, file)
 
     if not os.path.exists(pred_path):
-        print(f"⚠️ Missing prediction: {pred_file}")
+        print(f"⚠️ Missing prediction: {file}")
         continue
 
     # =========================
-    # LOAD IMAGES
+    # LOAD
     # =========================
     gt = cv2.imread(gt_path, cv2.IMREAD_GRAYSCALE)
     pred = cv2.imread(pred_path, cv2.IMREAD_GRAYSCALE)
@@ -45,25 +42,33 @@ for file in os.listdir(gt_dir):
         continue
 
     # =========================
+    # RESIZE (por seguridad)
+    # =========================
+    if gt.shape != pred.shape:
+        pred = cv2.resize(pred, (gt.shape[1], gt.shape[0]))
+
+    # =========================
     # BINARIZE
     # =========================
     gt = (gt > 0).astype(np.uint8)
-
-    # 🔥 IMPORTANT: predictions are grayscale image
-    # threshold needed
-    pred = (pred > 127).astype(np.uint8)
+    pred = (pred > 0).astype(np.uint8)
 
     # =========================
-    # METRICS
+    # EDGE CASE (ambos vacíos)
     # =========================
-    intersection = np.logical_and(gt, pred).sum()
-    union = np.logical_or(gt, pred).sum()
+    if gt.sum() == 0 and pred.sum() == 0:
+        iou = 1.0
+        dice = 1.0
+        precision = 1.0
+        recall = 1.0
+    else:
+        intersection = np.logical_and(gt, pred).sum()
+        union = np.logical_or(gt, pred).sum()
 
-    iou = intersection / (union + 1e-7)
-    dice = (2 * intersection) / (gt.sum() + pred.sum() + 1e-7)
-
-    precision = intersection / (pred.sum() + 1e-7)
-    recall = intersection / (gt.sum() + 1e-7)
+        iou = intersection / (union + 1e-7)
+        dice = (2 * intersection) / (gt.sum() + pred.sum() + 1e-7)
+        precision = intersection / (pred.sum() + 1e-7)
+        recall = intersection / (gt.sum() + 1e-7)
 
     # =========================
     # STORE
