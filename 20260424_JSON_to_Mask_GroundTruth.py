@@ -7,7 +7,7 @@ import os
 # PATHS
 # =========================
 input_dir = "/home/martinez/flower_phenotyping/results/metrics/groundTruth/masks"
-output_dir = "/home/martinez/flower_phenotyping/results/metrics/groundTruth/gt_masks"
+output_dir = "/home/martinez/flower_phenotyping/results/metrics/groundTruth/png_masks"
 os.makedirs(output_dir, exist_ok=True)
 
 # =========================
