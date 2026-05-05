@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 
 seg_dir = "/home/martinez/flower_phenotyping/data/annotations/YOLO_annotations/masks/segmented_color"
-output_csv = "/home/martinez/flower_phenotyping/data/annotations/YOLO_annotations/20260501_color_features.csv"
+output_csv = "/home/martinez/flower_phenotyping/data/annotations/YOLO_annotations/20260505_color_features.csv"
 
 rows = []
 
@@ -18,51 +18,62 @@ for file in os.listdir(seg_dir):
     if img is None:
         continue
 
-    # ====================================
-    # EXTRACT ONLY FLOWER (NOT BACKGROUND)
-    # ====================================
-    mask = np.any(img != [0, 0, 0], axis=2)
-    pixels = img[mask]
+    # =========================
+    # MASK 
+    # =========================
+    mask = np.any(img > 5, axis=2)
 
-    if len(pixels) == 0:
+    coords = np.column_stack(np.where(mask))
+    if len(coords) == 0:
         continue
 
-    # ====================================
-    # SAMPLE ONLY 100 PIXELS
-    # ====================================
-    if len(pixels) > 100:
-        idx = np.random.choice(len(pixels), 100, replace=False)
-        pixels = pixels[idx]
+    # =========================
+    # SAMPLE
+    # =========================
+    if len(coords) > 500:
+        coords = coords[np.random.choice(len(coords), 500, replace=False)]
 
-    # =========================
-    # AVERAGE COLOR (BGR)
-    # =========================
-    mean_bgr = pixels.mean(axis=0)
+    bgr_pixels = img[coords[:, 0], coords[:, 1]]
 
-    # =========================
-    # COLOR IN HSV
-    # =========================
     hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-    pixels_hsv = hsv[mask]
+    hsv_pixels = hsv[coords[:, 0], coords[:, 1]]
 
-    # aplicar mismo muestreo a HSV
-    if len(pixels_hsv) > 100:
-        pixels_hsv = pixels_hsv[idx]
+    # =========================
+    # FEATURES
+    # =========================
+    median_bgr = np.median(bgr_pixels, axis=0)
+    std_bgr = np.std(bgr_pixels, axis=0)
 
-    mean_hsv = pixels_hsv.mean(axis=0)
+    median_hsv = np.median(hsv_pixels, axis=0)
+    std_hsv = np.std(hsv_pixels, axis=0)
 
     rows.append({
         "image": file,
-        "mean_b": mean_bgr[0],
-        "mean_g": mean_bgr[1],
-        "mean_r": mean_bgr[2],
-        "mean_h": mean_hsv[0],
-        "mean_s": mean_hsv[1],
-        "mean_v": mean_hsv[2],
-        "num_pixels_used": len(pixels)
+
+        # median BGR
+        "median_b": median_bgr[0],
+        "median_g": median_bgr[1],
+        "median_r": median_bgr[2],
+
+        # std BGR
+        "std_b": std_bgr[0],
+        "std_g": std_bgr[1],
+        "std_r": std_bgr[2],
+
+        # median HSV
+        "median_h": median_hsv[0],
+        "median_s": median_hsv[1],
+        "median_v": median_hsv[2],
+
+        # std HSV
+        "std_h": std_hsv[0],
+        "std_s": std_hsv[1],
+        "std_v": std_hsv[2],
+
+        "num_pixels_used": len(coords)
     })
 
 df = pd.DataFrame(rows)
 df.to_csv(output_csv, index=False)
 
-print("✅ 100 pixels per flower extracted and saved")
+print("✅ Features (median + std) extracted")
