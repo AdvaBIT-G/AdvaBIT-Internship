@@ -106,9 +106,9 @@ scatter = plt.scatter(
     alpha=0.8
 )
 
-plt.xlabel("a* (green - red)")
-plt.ylabel("b* (blue - yellow)")
-plt.title("Clusters in CIELAB space")
+plt.xlabel("h")
+plt.ylabel("v")
+plt.title("Clusters in HSV space")
 
 plt.axhline(0, color='gray', linestyle='--', linewidth=1)
 plt.axvline(0, color='gray', linestyle='--', linewidth=1)
