@@ -19,29 +19,31 @@ EXTENSIONS = (".jpg", ".jpeg", ".png")
 
 def classify_hsv(h, s, v):
 
-    # 1. blanco (prioridad máxima)
-    if s < 40 and v > 200:
+    # white
+    if v > 200 and s < 50:
         return "white"
 
-    # 2. rojo (caso circular en HSV)
+    # red
     if (0 <= h <= 10) or (170 <= h <= 179):
-        if s >= 50 and v >= 50:
-            return "red"
+        return "red"
 
-    # 3. naranja
-    if 10 <= h <= 25 and s >= 80 and v >= 80:
+    # orange
+    if 10 <= h <= 25:
         return "orange"
 
-    # 4. verde
-    if 35 <= h <= 85 and s >= 40 and v >= 40:
+    # yellow
+    if 25 <= h <= 35:
+        return "yellow"
+
+    # green
+    if 35 <= h <= 85:
         return "green"
 
-    # 5. púrpura
-    if 130 <= h <= 170 and s >= 40 and v >= 40:
+    # purple
+    if 130 <= h <= 170:
         return "purple"
 
     return "unknown"
-
 
 # =========================
 # PROCESS MAKS
