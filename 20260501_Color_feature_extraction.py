@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 
 seg_dir = "/home/martinez/flower_phenotyping/data/annotations/YOLO_annotations/masks/segmented_color"
-output_csv = "/home/martinez/flower_phenotyping/data/annotations/YOLO_annotations/20260507_color_features.csv"
+output_csv = "/home/martinez/flower_phenotyping/data/annotations/color_annotations/20260507_color_features.csv"
 
 rows = []
 
