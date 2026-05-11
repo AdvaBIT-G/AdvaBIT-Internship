@@ -147,9 +147,9 @@ doubtful = df[
 # EXPORT
 # =========================================================
 
-df.to_csv("20260511_classified_images.csv", index=False)
-doubtful.to_csv("20260511_doubtful_images.csv", index=False)
-centroids.to_csv("20260511_centroids.csv")
+df.to_csv("/home/martinez/flower_phenotyping/data/annotations/color_annotations/20260511_classified_images.csv", index=False)
+doubtful.to_csv("/home/martinez/flower_phenotyping/data/annotations/color_annotations/20260511_doubtful_images.csv", index=False)
+centroids.to_csv("/home/martinez/flower_phenotyping/data/annotations/color_annotations/20260511_centroids.csv")
 
 # =========================================================
 # SUMMARY
