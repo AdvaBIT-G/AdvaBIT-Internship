@@ -23,13 +23,25 @@ THRESHOLD_UNKNOWN = 40  # % to label the image as problematic
 
 
 # =========================================================
-# LOAD CSV AND CLEAN CLUSTER COLUMN
+# LOAD CSV
 # =========================================================
 
 df = pd.read_csv(CSV)
-df[LABEL] = df[LABEL].replace(0, np.nan)
-df[LABEL] = df[LABEL].replace("0", np.nan)
-print(df.head(20))
+
+# =========================================================
+# CLEAN LABEL COLUMN
+# =========================================================
+
+# convert to number
+df[LABEL] = pd.to_numeric(df[LABEL], errors="coerce")
+
+# convert 0 en NaN
+df.loc[df[LABEL] == 0, LABEL] = np.nan
+
+print("\nUnique labels:")
+print(df[LABEL].unique())
+
+
 # =========================================================
 # NORMALIZE (SUM = 100)
 # =========================================================
@@ -57,7 +69,7 @@ print(df["lots_unknown"].sum())
 # USE ONLY IMAGES LABELLED FOR CENTROIDS
 # =========================================================
 
-df_train = df[df[LABEL].notna()].copy()
+df_train = df[df[LABEL].isin([1, 2, 3, 4, 5])].copy()
 
 print("\nLabeled images:")
 print(len(df_train))
