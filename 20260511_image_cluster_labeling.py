@@ -23,11 +23,13 @@ THRESHOLD_UNKNOWN = 40  # % to label the image as problematic
 
 
 # =========================================================
-# LOAD CSV
+# LOAD CSV AND CLEAN CLUSTER COLUMN
 # =========================================================
 
 df = pd.read_csv(CSV)
-
+df[LABEL] = df[LABEL].replace(0, np.nan)
+df[LABEL] = df[LABEL].replace("0", np.nan)
+print(df.head(20))
 # =========================================================
 # NORMALIZE (SUM = 100)
 # =========================================================
