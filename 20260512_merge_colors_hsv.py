@@ -28,4 +28,6 @@ missing = merged[merged.isna().any(axis=1)]
 print("Rows with NaN:")
 print(missing)
 
+merged = merged.drop(['median_b', 'median_g', 'median_r', 'std_b', 'std_g', 'std_r', 'Cluster', 'num_pixels_used'], axis=1)
+
 merged.to_csv("/home/martinez/flower_phenotyping/data/annotations/color_annotations/20260512_color_training_dataset.csv", index=False)
