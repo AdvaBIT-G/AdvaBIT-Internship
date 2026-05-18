@@ -12,7 +12,7 @@ from sklearn.preprocessing import LabelEncoder
 from sklearn.metrics import accuracy_score, f1_score
 from sklearn.model_selection import GridSearchCV
 
-CSV = '/home/martinez/flower_phenotyping/data/annotations/color_annotations/20260512_color_training_dataset.csv'
+CSV = '/home/martinez/flower_phenotyping/data/annotations/color_annotations/20260518_color_training_dataset.csv'
 
 df = pd.read_csv(CSV)
 
