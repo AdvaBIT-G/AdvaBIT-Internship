@@ -3,7 +3,7 @@ import shutil
 import pandas as pd
 
 # Config
-csv_path = "C:/Users/GEMA/OneDrive - Pure Production AG/Documents/Internship Howest/flower_phenotyping/results/20260505_5_cluster_results.csv"
+csv_path = "C:/Users/GEMA/OneDrive - Pure Production AG/Documents/Internship Howest/flower_phenotyping/results/20260518_4_cluster_results.csv"
 image_folder = "C:/Users/GEMA/OneDrive - Pure Production AG/Documents/Internship Howest/flower_phenotyping/data/annotations/YOLO_annotations/masks"
 output_folder = "C:/Users/GEMA/OneDrive - Pure Production AG/Documents/Internship Howest/flower_phenotyping/results"
 samples_per_cluster = 10
