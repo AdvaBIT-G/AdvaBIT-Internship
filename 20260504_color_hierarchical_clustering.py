@@ -90,7 +90,7 @@ plt.close()
 # =========================
 # 8. CHOOSE K
 # =========================
-k_opt = 5
+k_opt = 4
 clusters = fcluster(Z, k_opt, criterion='maxclust')
 
 # =============================
@@ -121,7 +121,7 @@ plt.close()
 # 10. SAVE RESULTS
 # =========================
 df['cluster'] = clusters
-df.to_csv("/home/martinez/flower_phenotyping/results/20260507_5_cluster_results.csv", index=False)
+df.to_csv("/home/martinez/flower_phenotyping/results/20260518_4_cluster_results.csv", index=False)
 
 print(df.head())
 
