@@ -147,9 +147,9 @@ doubtful = df[
 # EXPORT
 # =========================================================
 
-df.to_csv("/home/martinez/flower_phenotyping/data/annotations/color_annotations/20260511_classified_images.csv", index=False)
-doubtful.to_csv("/home/martinez/flower_phenotyping/data/annotations/color_annotations/20260511_doubtful_images.csv", index=False)
-centroids.to_csv("/home/martinez/flower_phenotyping/data/annotations/color_annotations/20260511_centroids.csv")
+df.to_csv("/home/martinez/flower_phenotyping/data/annotations/color_annotations/20260518_classified_images.csv", index=False)
+doubtful.to_csv("/home/martinez/flower_phenotyping/data/annotations/color_annotations/20260518_doubtful_images.csv", index=False)
+centroids.to_csv("/home/martinez/flower_phenotyping/data/annotations/color_annotations/20260518_centroids.csv")
 
 # =========================================================
 # SUMMARY
@@ -166,6 +166,6 @@ print("\nDoubtful_images:")
 print(len(doubtful))
 
 print("\nGenerated files:")
-print("- 20260511_classified_images.csv")
-print("- 20260511_doubtful_images.csv")
-print("- 20260511_centroids.csv")
+print("- 20260518_classified_images.csv")
+print("- 20260518_doubtful_images.csv")
+print("- 20260518_centroids.csv")
