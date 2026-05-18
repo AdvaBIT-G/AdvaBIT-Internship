@@ -1,7 +1,7 @@
 import pandas as pd
 
 df_colors = pd.read_csv("/home/martinez/flower_phenotyping/data/annotations/color_annotations/20260508_mask_color_percentages.csv")
-df_hsv = pd.read_csv("/home/martinez/flower_phenotyping/results/20260507_5_cluster_results.csv")
+df_hsv = pd.read_csv("/home/martinez/flower_phenotyping/results/20260518_4_cluster_results.csv")
 
 # cleaning names
 for df in [df_colors, df_hsv]:
@@ -30,4 +30,4 @@ print(missing)
 
 merged = merged.drop(['median_b', 'median_g', 'median_r', 'std_b', 'std_g', 'std_r', 'Cluster', 'num_pixels_used'], axis=1)
 
-merged.to_csv("/home/martinez/flower_phenotyping/data/annotations/color_annotations/20260512_color_training_dataset.csv", index=False)
+merged.to_csv("/home/martinez/flower_phenotyping/data/annotations/color_annotations/20260518_color_training_dataset.csv", index=False)
