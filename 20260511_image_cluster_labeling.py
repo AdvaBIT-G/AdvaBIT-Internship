@@ -69,7 +69,7 @@ print(df["lots_unknown"].sum())
 # USE ONLY IMAGES LABELLED FOR CENTROIDS
 # =========================================================
 
-df_train = df[df[LABEL].isin([1, 2, 3, 4, 5])].copy()
+df_train = df[df[LABEL].isin([1, 2, 3, 4])].copy()
 
 print("\nLabeled images:")
 print(len(df_train))
