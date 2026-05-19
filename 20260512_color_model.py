@@ -11,6 +11,7 @@ from sklearn.metrics import classification_report, confusion_matrix
 from sklearn.preprocessing import LabelEncoder
 from sklearn.metrics import accuracy_score, f1_score
 from sklearn.model_selection import GridSearchCV
+from joblib import dump
 
 CSV = '/home/martinez/flower_phenotyping/data/annotations/color_annotations/20260518_color_training_dataset.csv'
 
@@ -277,3 +278,18 @@ print(f'Test Accuracy : {test_acc:.3f}')
 
 print(f'Train F1 Macro: {train_f1:.3f}')
 print(f'Test F1 Macro : {test_f1:.3f}')
+
+#########################################################
+# MODEL TRAINING WITH DEFAULT PARAMETERS (FINAL VERSION)
+#########################################################
+
+# SVM
+svm = SVC(kernel='rbf', class_weight='balanced')
+svm.fit(X_train_scaled, y_train)
+
+################################
+# SAVE THE MODEL AND THE SCALER
+################################
+
+dump(svm, 'flower_color_model_svm.joblib')
+dump(scaler, 'scaler.joblib')
