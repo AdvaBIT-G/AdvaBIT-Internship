@@ -12,7 +12,7 @@ from sklearn.preprocessing import LabelEncoder
 from sklearn.metrics import accuracy_score, f1_score
 from sklearn.model_selection import GridSearchCV
 from joblib import dump
-
+from sklearn.pipeline import Pipeline
 CSV = '/home/martinez/flower_phenotyping/data/annotations/color_annotations/20260518_color_training_dataset.csv'
 
 df = pd.read_csv(CSV)
@@ -284,12 +284,16 @@ print(f'Test F1 Macro : {test_f1:.3f}')
 #########################################################
 
 # SVM
-svm = SVC(kernel='rbf', class_weight='balanced')
-svm.fit(X_train_scaled, y_train)
+
+pipeline = Pipeline([
+    ('scaler', StandardScaler()),
+    ('svm', SVC(kernel='rbf', class_weight='balanced'))
+])
+
+pipeline.fit(X_train, y_train)
 
 ################################
 # SAVE THE MODEL AND THE SCALER
 ################################
 
-dump(svm, 'flower_color_model_svm.joblib')
-dump(scaler, 'scaler.joblib')
+dump(pipeline, 'flower_color_model_svm.joblib')
