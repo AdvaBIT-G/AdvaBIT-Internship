@@ -4,14 +4,55 @@ import numpy as np
 import pandas as pd
 from collections import Counter
 from joblib import load
+from ultralytics import YOLO
 
 # =========================
 # CONFIG
 # =========================
 
-MASK_DIR = "/home/martinez/flower_phenotyping/data/annotations/color_annotations/test"
+TEST_RAW_DIR = "/home/martinez/flower_phenotyping/data/full_model_testing/test"
+TEST_MASK_DIR = "/home/martinez/flower_phenotyping/data/full_model_testing/masks"
 
 EXTENSIONS = (".jpg", ".jpeg", ".png")
+
+# =====================================
+# FLOWER SEGMENTATION USING YOLO MODEL
+# =====================================
+yolo_model = YOLO("/home/martinez/flower_phenotyping/models/yolo/weights/best.pt")
+
+results = yolo_model.predict(
+    source=TEST_RAW_DIR,
+    imgsz=1024,
+    conf=0.3,
+    save=True  
+)
+
+# folder for masks
+mask_dir = TEST_MASK_DIR
+os.makedirs(mask_dir, exist_ok=True)
+
+for r in results:
+
+    if r.masks is None:
+        continue
+
+    filename = os.path.basename(r.path)
+    filename = os.path.splitext(filename)[0] + ".png"
+
+    h, w = r.orig_shape
+    combined_mask = np.zeros((h, w), dtype=np.uint8)
+
+    for mask in r.masks.data:
+        m = mask.cpu().numpy()
+        m = cv2.resize(m, (w, h))
+        m = (m > 0.5).astype(np.uint8)
+        combined_mask = np.logical_or(combined_mask, m)
+
+    combined_mask = combined_mask.astype(np.uint8)
+
+    cv2.imwrite(os.path.join(mask_dir, filename), combined_mask * 255)
+
+print("✅ Masks saved")
 
 # =========================
 # HSV CLASSIFICATION
@@ -89,12 +130,12 @@ def process_mask(mask_path):
 
 results = []
 
-for file in os.listdir(MASK_DIR):
+for file in os.listdir(TEST_MASK_DIR):
 
     if not file.lower().endswith(EXTENSIONS):
         continue
 
-    mask_path = os.path.join(MASK_DIR, file)
+    mask_path = os.path.join(TEST_MASK_DIR, file)
 
     percentages = process_mask(mask_path)
 
