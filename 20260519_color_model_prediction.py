@@ -122,11 +122,15 @@ def classify_hsv(h, s, v):
 # PROCESS MAKS
 # =========================
 
-def process_mask(mask_path):
-
+def process_mask(image_path, mask_path):
+    image = cv2.imread(image_path)
     mask = cv2.imread(mask_path)
 
-    if mask is None:
+    if image is None or mask is None:
+        return None
+    #Binary mask
+    valid_mask = mask > 0
+    if np.sum(valid_mask) == 0:
         return None
 
     # Remove background
@@ -152,7 +156,7 @@ def process_mask(mask_path):
 
     percentages = {
         c: 100 * n / total
-        for c, n in counts.items()
+        for c, n in FEATURE_ORDER if c in counts or True
     }
     
     # hsv statistics
@@ -172,7 +176,7 @@ def process_mask(mask_path):
     }
 
 
-    # Ordered features
+    # Merge
     all_features = {**percentages, **stats}
 
     features = {
@@ -194,10 +198,11 @@ for file in os.listdir(TEST_MASK_DIR):
 
     if not file.lower().endswith(EXTENSIONS):
         continue
-
+    
+    image_path = os.path.join(TEST_RAW_DIR, file)
     mask_path = os.path.join(TEST_MASK_DIR, file)
 
-    features = process_mask(mask_path)
+    features = process_mask(image_path, mask_path)
 
     if features is None:
         continue
