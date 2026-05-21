@@ -6,6 +6,7 @@ from collections import Counter
 from joblib import load
 from ultralytics import YOLO
 
+
 # =========================
 # CONFIG
 # =========================
@@ -14,6 +15,36 @@ TEST_RAW_DIR = "/home/martinez/flower_phenotyping/data/full_model_testing/test"
 TEST_MASK_DIR = "/home/martinez/flower_phenotyping/data/full_model_testing/masks"
 
 EXTENSIONS = (".jpg", ".jpeg", ".png")
+
+FEATURE_ORDER = [ 
+
+    "green", 
+
+    "yellow", 
+
+    "orange", 
+
+    "white", 
+
+    "red", 
+
+    "unknown", 
+
+    "purple", 
+
+    "median_h", 
+
+    "median_s", 
+
+    "median_v", 
+
+    "std_h", 
+
+    "std_s", 
+
+    "std_v", 
+
+    ] 
 
 # =====================================
 # FLOWER SEGMENTATION USING YOLO MODEL
@@ -24,6 +55,7 @@ results = yolo_model.predict(
     source=TEST_RAW_DIR,
     imgsz=1024,
     conf=0.3,
+    device='cpu',
     save=True  
 )
 
@@ -60,6 +92,18 @@ print("✅ Masks saved")
 
 def classify_hsv(h, s, v):
 
+    # green
+    if 35 <= h <= 85:
+        return "green"
+    
+    # yellow
+    if 25 <= h <= 35:
+        return "yellow"
+    
+    # orange
+    if 10 <= h <= 25:
+        return "orange"
+
     # white
     if v > 200 and s < 50:
         return "white"
@@ -67,18 +111,6 @@ def classify_hsv(h, s, v):
     # red
     if (0 <= h <= 10) or (170 <= h <= 179):
         return "red"
-
-    # orange
-    if 10 <= h <= 25:
-        return "orange"
-
-    # yellow
-    if 25 <= h <= 35:
-        return "yellow"
-
-    # green
-    if 35 <= h <= 85:
-        return "green"
 
     # purple
     if 130 <= h <= 170:
@@ -106,8 +138,10 @@ def process_mask(mask_path):
     # convert flower pixels to HSV
     hsv = cv2.cvtColor(mask, cv2.COLOR_BGR2HSV)
 
+    # Keep only flower pixels
     pixels = hsv[valid_mask]
 
+    # Color labels
     labels = [
         classify_hsv(h, s, v)
         for h, s, v in pixels
@@ -120,8 +154,34 @@ def process_mask(mask_path):
         c: 100 * n / total
         for c, n in counts.items()
     }
+    
+    # hsv statistics
 
-    return percentages
+    h_values = pixels[:, 0]
+    s_values = pixels[:, 1]
+    v_values = pixels[:, 2]
+
+    stats = {
+        "median_h": np.median(h_values),
+        "median_s": np.median(s_values),
+        "median_v": np.median(v_values),
+
+        "std_h": np.std(h_values),
+        "std_s": np.std(s_values),
+        "std_v": np.std(v_values),
+    }
+
+
+    # Ordered features
+    all_features = {**percentages, **stats}
+
+    features = {
+        key: all_features.get(key, 0)
+        for key in FEATURE_ORDER
+    }
+
+    return features
+
 
 
 # =========================
@@ -137,13 +197,13 @@ for file in os.listdir(TEST_MASK_DIR):
 
     mask_path = os.path.join(TEST_MASK_DIR, file)
 
-    percentages = process_mask(mask_path)
+    features = process_mask(mask_path)
 
-    if percentages is None:
+    if features is None:
         continue
 
     row = {"image": file}
-    row.update(percentages)
+    row.update(features)
 
     results.append(row)
 
@@ -152,7 +212,10 @@ for file in os.listdir(TEST_MASK_DIR):
 # SAVE RESULTS IN A DATAFRAME
 # =============================
 
-features = pd.DataFrame(results).fillna(0)
+features_df = pd.DataFrame(results).fillna(0)
+
+# remove image column before prediction
+X = features_df.drop(columns=["image"])
 
 # =================
 # LOAD COLOR MODEL
@@ -163,6 +226,12 @@ svm = load('/home/martinez/flower_phenotyping/models/color/flower_color_model_sv
 # PREDICTION
 # =================
 
-pred = svm.predict(features)
-print('Predicted color:', pred[0])
+pred = svm.predict(X)
 
+features_df["prediction"] = pred
+
+print(features_df[["image", "prediction"]])
+
+features_df.to_csv("20260521_color_predictions.xlsx", index=False)
+
+print("✅ Results saved to 20260521_color_predictions.xlsx")
