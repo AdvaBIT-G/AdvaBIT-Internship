@@ -5,6 +5,7 @@ import pandas as pd
 from collections import Counter
 from joblib import load
 from ultralytics import YOLO
+import shutil
 
 
 # =========================
@@ -240,10 +241,76 @@ svm = load('/home/martinez/flower_phenotyping/models/color/flower_color_model_sv
 
 pred = svm.predict(X)
 
-features_df["prediction"] = pred
+features_df["cluster_prediction"] = pred
 
-print(features_df[["image", "prediction"]])
+print(features_df[["image", "cluster_prediction"]])
 
-features_df.to_csv("20260521_color_predictions.csv", index=False)
+features_df.to_csv("/home/martinez/flower_phenotyping/results/color/20260521_color_predictions.csv", index=False)
 
-print("✅ Results saved to 20260521_color_predictions.csv")
+print("✅ Results saved to /home/martinez/flower_phenotyping/results/color/20260521_color_predictions.csv")
+
+# ==========================
+# IMAGE FOLDER PER CLUSTER
+# ==========================
+
+#Paths
+csv_file = '/home/martinez/flower_phenotyping/results/color/20260521_color_predictions.csv'
+source_folder = '/home/martinez/flower_phenotyping/data/raw'
+output_folder = '/home/martinez/flower_phenotyping/results/color/'
+
+#Read csv
+df = pd.read_csv(csv_file)
+
+#Clean image names
+df['image'] = df['image'].astype(str).str.strip()
+df['cluster_prediction'] = df['cluster_prediction'].astype(str).str.strip()
+
+#Cluster folder creation 
+clusters = df['cluster_prediction'].unique()
+
+for cluster in clusters:
+    cluster_path = os.path.join(output_folder, f"cluster_{cluster}")
+    os.makedirs(cluster_path, exist_ok=True)
+
+# List of files
+available_files = os.listdir(source_folder)
+
+#Dictionary for the case-insensitive search
+file_map = {}
+
+for f in available_files:
+    base_name, ext = os.path.splitext(f) #separate name and extension
+    if ext.lower() in ['.jpg']:
+        file_map[base_name.lower()] = f
+
+#Copy images
+copied = 0
+missing = 0
+
+for _, row in df.iterrows():
+    image_name = row['image']
+    cluster = row['cluster_prediction']
+
+    #Remove extension from csv image names
+    base_name = os.path.splitext(image_name)[0].lower()
+
+    #Search corresponding .jpg
+    real_file = file_map.get(base_name)
+
+    if real_file:
+
+      source_path = os.path.join(source_folder, real_file)
+      destination_path = os.path.join(
+         output_folder,
+         f"cluster_{cluster}",
+         real_file    
+        )
+
+      shutil.copy2(source_path, destination_path)
+      print(f"Copied: {real_file} -> cluster_{cluster}")
+      copied += 1
+    else:
+      print(f"Not found: {image_name}")
+      missing += 1
+
+print("Process ended.")
