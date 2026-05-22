@@ -14,7 +14,6 @@ from ultralytics import YOLO
 TEST_RAW_DIR = "/home/martinez/flower_phenotyping/data/full_model_testing/test"
 TEST_MASK_DIR = "/home/martinez/flower_phenotyping/data/full_model_testing/masks"
 
-EXTENSIONS = (".jpg", ".jpeg", ".png")
 
 FEATURE_ORDER = [ 
 
@@ -68,17 +67,17 @@ for r in results:
     if r.masks is None:
         continue
 
-    filename = os.path.basename(r.path)
-    filename = os.path.splitext(filename)[0] + ".png"
+    original_name = os.path.basename(r.path)
+    filename = os.path.splitext(original_name)[0] + ".png"
 
     h, w = r.orig_shape
     combined_mask = np.zeros((h, w), dtype=np.uint8)
 
     for mask in r.masks.data:
         m = mask.cpu().numpy()
-        m = cv2.resize(m, (w, h))
-        m = (m > 0.5).astype(np.uint8)
-        combined_mask = np.logical_or(combined_mask, m)
+        m = cv2.resize(m, (w, h), interpolation=cv2.INTER_NEAREST)
+        m = (m > 0).astype(np.uint8)
+        combined_mask = np.maximum(combined_mask, m)
 
     combined_mask = combined_mask.astype(np.uint8)
 
@@ -140,7 +139,7 @@ def process_mask(image_path, mask_path):
         return None
 
     # convert flower pixels to HSV
-    hsv = cv2.cvtColor(mask, cv2.COLOR_BGR2HSV)
+    hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
 
     # Keep only flower pixels
     pixels = hsv[valid_mask]
@@ -155,8 +154,8 @@ def process_mask(image_path, mask_path):
     total = len(labels)
 
     percentages = {
-        c: 100 * n / total
-        for c, n in FEATURE_ORDER if c in counts or True
+        c: 100 * counts.get(c, 0) / total
+        for c in FEATURE_ORDER[:7]
     }
     
     # hsv statistics
@@ -196,11 +195,19 @@ results = []
 
 for file in os.listdir(TEST_MASK_DIR):
 
-    if not file.lower().endswith(EXTENSIONS):
+    if not file.lower().endswith(".png"):
         continue
-    
-    image_path = os.path.join(TEST_RAW_DIR, file)
+
+    # file without extension
+    base_name = os.path.splitext(file)[0]
+
+    # mask
     mask_path = os.path.join(TEST_MASK_DIR, file)
+
+    # raw image
+    image_file = base_name + ".jpg"
+    image_path = os.path.join(TEST_RAW_DIR, image_file)
+    
 
     features = process_mask(image_path, mask_path)
 
@@ -237,6 +244,6 @@ features_df["prediction"] = pred
 
 print(features_df[["image", "prediction"]])
 
-features_df.to_csv("20260521_color_predictions.xlsx", index=False)
+features_df.to_csv("20260521_color_predictions.csv", index=False)
 
-print("✅ Results saved to 20260521_color_predictions.xlsx")
+print("✅ Results saved to 20260521_color_predictions.csv")
