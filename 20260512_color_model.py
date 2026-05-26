@@ -287,7 +287,7 @@ print(f'Test F1 Macro : {test_f1:.3f}')
 
 pipeline = Pipeline([
     ('scaler', StandardScaler()),
-    ('svm', SVC(kernel='rbf', class_weight='balanced'))
+    ('svm', SVC(kernel='rbf', class_weight='balanced', probability=True))
 ])
 
 pipeline.fit(X_train, y_train)
@@ -296,4 +296,4 @@ pipeline.fit(X_train, y_train)
 # SAVE THE MODEL AND THE SCALER
 ################################
 
-dump(pipeline, 'flower_color_model_svm.joblib')
+dump(pipeline, '/home/martinez/flower_phenotyping/models/color/flower_color_model_svm.joblib')
