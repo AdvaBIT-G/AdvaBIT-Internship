@@ -240,21 +240,28 @@ svm = load('/home/martinez/flower_phenotyping/models/color/flower_color_model_sv
 # =================
 
 pred = svm.predict(X)
+probs = svm.predict_proba(X)
+confidence = probs.max(axis=1)
 
 features_df["cluster_prediction"] = pred
+features_df['prob_cluster1'] = probs[:,0]
+features_df['prob_cluster2'] = probs[:,1]
+features_df['prob_cluster3'] = probs[:,2]
+features_df['prob_cluster4'] = probs[:,3]
+features_df['confidence'] = confidence
 
-print(features_df[["image", "cluster_prediction"]])
+print(features_df[["image", "cluster_prediction", "prob_cluster1", "prob_cluster2", "prob_cluster3", "prob_cluster4", "confidence"]])
 
-features_df.to_csv("/home/martinez/flower_phenotyping/results/color/20260521_color_predictions.csv", index=False)
+features_df.to_csv("/home/martinez/flower_phenotyping/results/color/20260526_color_predictions.csv", index=False)
 
-print("✅ Results saved to /home/martinez/flower_phenotyping/results/color/20260521_color_predictions.csv")
+print("✅ Results saved to /home/martinez/flower_phenotyping/results/color/20260526_color_predictions.csv")
 
 # ==========================
 # IMAGE FOLDER PER CLUSTER
 # ==========================
 
 #Paths
-csv_file = '/home/martinez/flower_phenotyping/results/color/20260521_color_predictions.csv'
+csv_file = '/home/martinez/flower_phenotyping/results/color/20260526_color_predictions.csv'
 source_folder = '/home/martinez/flower_phenotyping/data/raw'
 output_folder = '/home/martinez/flower_phenotyping/results/color/'
 
