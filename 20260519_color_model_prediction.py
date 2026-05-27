@@ -6,6 +6,7 @@ from collections import Counter
 from joblib import load
 from ultralytics import YOLO
 import shutil
+import math
 
 
 # =========================
@@ -250,11 +251,124 @@ features_df['prob_cluster3'] = probs[:,2]
 features_df['prob_cluster4'] = probs[:,3]
 features_df['confidence'] = confidence
 
+
 print(features_df[["image", "cluster_prediction", "prob_cluster1", "prob_cluster2", "prob_cluster3", "prob_cluster4", "confidence"]])
 
 features_df.to_csv("/home/martinez/flower_phenotyping/results/color/20260526_color_predictions.csv", index=False)
 
 print("✅ Results saved to /home/martinez/flower_phenotyping/results/color/20260526_color_predictions.csv")
+
+# ==========================================
+# ASSIGN SPECIFIC COLOR TONE TO EACH SAMPLE
+# ==========================================
+
+COLORS = {
+    # GREENS
+    "lime green": (75, 100, 95),
+    "neon green": (90, 100, 98),
+    "bright green": (110, 95, 100),
+    "forest green": (120, 80, 57),
+    "dark forest green": (120, 50, 35),
+    "olive green": (60, 45, 70),
+    "dark olive": (70, 65, 35),
+    "sage green": (115, 25, 78),
+    "mint green": (142, 55, 76),
+    "sea green": (146, 60, 56),
+    "emerald green": (158, 92, 67),
+    "turquoise green": (160, 95, 45),
+    "yellow green": (62, 40, 72),
+    "pale green": (95, 35, 74),
+    "pastel green": (142, 50, 68),
+    "grasshopper green": (128, 95, 68),
+    "moss green": (95, 55, 40),
+    "khaki green": (80, 30, 55),
+    "chlorophyll green": (115, 85, 85),
+
+    # PURPLES
+    "lavender": (285, 96, 93),
+    "violet": (280, 35, 85),
+    "deep purple": (300, 100, 58),
+    "dark purple": (300, 70, 22),
+    "plum purple": (295, 65, 45),
+    "grape purple": (303, 97, 76),
+    "magenta purple": (310, 90, 70),
+    "purple haze": (282, 45, 78),
+    "black purple": (290, 60, 15),
+    "royal purple": (275, 80, 60),
+
+    # RED / PINK / PISTILS
+    "orange pistil": (30, 100, 100),
+    "burnt orange": (25, 80, 70),
+    "amber": (40, 90, 85),
+    "copper": (20, 75, 60),
+    "salmon": (6, 40, 68),
+    "rose": (328, 42, 70),
+    "pink pistil": (345, 30, 76),
+
+    # TRICHOMES / RESIN
+    "frosty white": (0, 0, 95),
+    "milky white": (0, 5, 88),
+    "amber trichome": (35, 65, 80),
+    "golden resin": (45, 85, 90),
+}
+
+# Distance to HSV
+
+def distance_hsv(hsv1, hsv2):
+
+    h1, s1, v1 = hsv1
+    h2, s2, v2 = hsv2
+
+    # Hue circular
+    dh = min(abs(h1 - h2), 360 - abs(h1 - h2)) / 180
+
+    # Normalization
+    ds = abs(s1 - s2) / 100
+    dv = abs(v1 - v2) / 100
+
+    return math.sqrt((3*dh**2) + (1*ds**2) + (0.5*dv**2))
+
+# Specific color 
+def specific_color(h, s, v):
+
+    hsv_sample = (h, s, v)
+
+    best_color = None
+    best_distance = float("inf")
+
+    for name, hsv_ref in COLORS.items():
+
+        distance = distance_hsv(hsv_sample, hsv_ref)
+
+        if distance < best_distance:
+            best_distance = distance
+            best_color = name
+
+    return best_color
+
+#Normalize hsv values 
+def normalize_hsv_opencv(h, s, v):
+
+    # OpenCV -> standard
+    h = h * 2
+    s = (s / 255) * 100
+    v = (v / 255) * 100
+
+    return h, s, v
+
+
+features_df["specific_color"] = features_df.apply(
+    lambda row: specific_color(
+        *normalize_hsv_opencv(
+        row["median_h"],
+        row["median_s"],
+        row["median_v"]
+        )
+    ),
+    axis=1
+)
+
+features_df.to_csv("/home/martinez/flower_phenotyping/results/color/20260527_color_predictions.csv", index=False)
 
 # ==========================
 # IMAGE FOLDER PER CLUSTER
