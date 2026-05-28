@@ -7,7 +7,8 @@ from joblib import load
 from ultralytics import YOLO
 import shutil
 import math
-
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 # =========================
 # CONFIG
@@ -369,6 +370,106 @@ features_df["specific_color"] = features_df.apply(
 )
 
 features_df.to_csv("/home/martinez/flower_phenotyping/results/color/20260527_color_predictions.csv", index=False)
+
+# =====================================
+# PLOT CONFIDENCE VS COLOR VARIABILITY
+# =====================================
+
+sns.set_style("whitegrid")
+
+
+# LONG FORMAT
+
+df_long = features_df.melt(
+    id_vars=["confidence", "cluster_prediction"],
+    value_vars=["std_h", "std_s", "std_v"],
+    var_name="channel",
+    value_name="std"
+)
+
+# FACET GRID
+
+g = sns.FacetGrid(
+    df_long,
+    col="channel",
+    hue="cluster_prediction",
+    palette="tab10",
+    height=4,
+    aspect=1.1,
+    sharex=False,
+    sharey=True
+)
+
+g.map_dataframe(
+    sns.scatterplot,
+    x="std",
+    y="confidence",
+    s=40,
+    alpha=0.75,
+    edgecolor="none"
+)
+
+# LABELS
+
+g.set_axis_labels("Color variability (std)", "SVM confidence")
+g.set_titles("{col_name}")
+
+# Legend
+g.add_legend(title="Cluster")
+
+# Ajuste layout
+plt.tight_layout()
+
+plt.show()
+plt.savefig("/home/martinez/flower_phenotyping/results/figures/20260528_confidence_vs_color_var.png")
+
+# ======================
+# PLOT HUE DISTRIBUTION
+# ======================
+
+plt.figure(figsize=(8,5))
+
+sns.histplot(
+    data=features_df,
+    x="median_h",         
+    bins=30,
+    kde=True,
+    color="purple"
+)
+
+plt.title("Hue Distribution")
+plt.xlabel("Hue")
+plt.ylabel("Frequency")
+
+plt.grid(True, alpha=0.3)
+plt.show()
+plt.savefig("/home/martinez/flower_phenotyping/results/figures/20260528_hue_distribution.png")
+
+# ======================
+# S vs V SCATTERPLOT
+# ======================
+plt.figure(figsize=(7,6))
+
+sns.scatterplot(
+    data=features_df,
+    x="median_s",
+    y="median_v",
+    hue="cluster_prediction", 
+    palette="tab10",
+    alpha=0.7
+)
+
+plt.title("Saturation vs Value")
+plt.xlabel("S (Saturation)")
+plt.ylabel("V (Value)")
+
+plt.grid(True, alpha=0.3)
+plt.legend(title="Cluster")
+
+plt.show()
+plt.savefig("/home/martinez/flower_phenotyping/results/figures/20260528_s_vs_v_scatter.png")
+
+
 
 # ==========================
 # IMAGE FOLDER PER CLUSTER
