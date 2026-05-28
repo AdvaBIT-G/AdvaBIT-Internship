@@ -470,6 +470,50 @@ plt.show()
 plt.savefig("/home/martinez/flower_phenotyping/results/figures/20260528_s_vs_v_scatter.png")
 
 
+# =========================
+# H vs S
+# =========================
+
+fig, axes = plt.subplots(1, 2, figsize=(12, 5))
+sns.scatterplot(
+    data=features_df,
+    x="h",
+    y="s",
+    hue="cluster_prediction",
+    palette="tab10",
+    alpha=0.7,
+    ax=axes[0]
+)
+
+axes[0].set_title("Hue vs Saturation")
+axes[0].set_xlabel("H")
+axes[0].set_ylabel("S")
+
+plt.tight_layout()
+plt.show()
+plt.savefig("/home/martinez/flower_phenotyping/results/figures/20260528_h_vs_s_scatter.png")
+
+# =========================
+# H vs V
+# =========================
+sns.scatterplot(
+    data=features_df,
+    x="h",
+    y="v",
+    hue="cluster_prediction",
+    palette="tab10",
+    alpha=0.7,
+    ax=axes[1]
+)
+
+axes[1].set_title("Hue vs Value")
+axes[1].set_xlabel("H")
+axes[1].set_ylabel("V")
+
+plt.tight_layout()
+plt.show()
+plt.savefig("/home/martinez/flower_phenotyping/results/figures/20260528_h_vs_v_scatter.png")
+
 
 # ==========================
 # IMAGE FOLDER PER CLUSTER
