@@ -9,6 +9,7 @@ import shutil
 import math
 import matplotlib.pyplot as plt
 import seaborn as sns
+from sklearn.decomposition import PCA
 
 # =========================
 # CONFIG
@@ -474,20 +475,19 @@ plt.savefig("/home/martinez/flower_phenotyping/results/figures/20260528_s_vs_v_s
 # H vs S
 # =========================
 
-fig, axes = plt.subplots(1, 2, figsize=(12, 5))
+plt.figure(figsize=(7,6))
 sns.scatterplot(
     data=features_df,
-    x="h",
-    y="s",
+    x="median_h",
+    y="median_s",
     hue="cluster_prediction",
     palette="tab10",
-    alpha=0.7,
-    ax=axes[0]
+    alpha=0.7
 )
 
-axes[0].set_title("Hue vs Saturation")
-axes[0].set_xlabel("H")
-axes[0].set_ylabel("S")
+plt.title("Hue vs Saturation")
+plt.xlabel("H")
+plt.ylabel("S")
 
 plt.tight_layout()
 plt.show()
@@ -496,24 +496,42 @@ plt.savefig("/home/martinez/flower_phenotyping/results/figures/20260528_h_vs_s_s
 # =========================
 # H vs V
 # =========================
+plt.figure(figsize=(7,6))
 sns.scatterplot(
     data=features_df,
-    x="h",
-    y="v",
+    x="median_h",
+    y="median_v",
     hue="cluster_prediction",
     palette="tab10",
-    alpha=0.7,
-    ax=axes[1]
+    alpha=0.7
 )
 
-axes[1].set_title("Hue vs Value")
-axes[1].set_xlabel("H")
-axes[1].set_ylabel("V")
+plt.title("Hue vs Value")
+plt.xlabel("H")
+plt.ylabel("V")
 
 plt.tight_layout()
 plt.show()
 plt.savefig("/home/martinez/flower_phenotyping/results/figures/20260528_h_vs_v_scatter.png")
 
+# ============
+# PCA
+# ============
+plt.figure(figsize=(7,6))
+X_pca = PCA().fit_transform(features_df[["median_h","median_s","median_v"]])
+
+plt.scatter(
+    X_pca[:,0],
+    X_pca[:,1],
+    c=features_df["cluster_prediction"],
+    cmap="tab10",
+    alpha=0.7
+)
+
+plt.title("Clusters in PCA space")
+plt.show()
+print(X_pca.explained_variance_ratio_)
+plt.savefig("/home/martinez/flower_phenotyping/results/figures/20260528_hsv_pca.png")
 
 # ==========================
 # IMAGE FOLDER PER CLUSTER
