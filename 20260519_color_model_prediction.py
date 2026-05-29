@@ -11,6 +11,8 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import accuracy_score
+from sklearn.metrics import confusion_matrix
 
 # =========================
 # CONFIG
