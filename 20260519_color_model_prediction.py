@@ -10,6 +10,7 @@ import math
 import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.decomposition import PCA
+from sklearn.preprocessing import StandardScaler
 
 # =========================
 # CONFIG
@@ -518,7 +519,13 @@ plt.savefig("/home/martinez/flower_phenotyping/results/figures/20260528_h_vs_v_s
 # PCA
 # ============
 plt.figure(figsize=(7,6))
-X_pca = PCA().fit_transform(features_df[["median_h","median_s","median_v"]])
+X = features_df[["median_h","median_s","median_v"]]
+
+#Scale data
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X)
+
+X_pca = PCA(n_components=3).fit_transform(X_scaled)
 
 plt.scatter(
     X_pca[:,0],
@@ -530,8 +537,53 @@ plt.scatter(
 
 plt.title("Clusters in PCA space")
 plt.show()
-print(X_pca.explained_variance_ratio_)
 plt.savefig("/home/martinez/flower_phenotyping/results/figures/20260528_hsv_pca.png")
+
+# ==========
+# 3D PCA
+# ==========
+
+fig = plt.figure(figsize=(8, 6))
+ax = fig.add_subplot(111, projection='3d')
+
+ax.scatter(
+ X_pca[:,0],
+ X_pca[:,1],
+ X_pca[:,2],
+ c=features_df["cluster_prediction"],
+ cmap="tab10",
+ alpha=0.7
+)
+ax.set_xlabel('PC1')
+ax.set_ylabel('PC2')
+ax.set_zlabel('PC3')
+ax.set_title('PCA 3D')
+
+plt.show()
+plt.savefig("/home/martinez/flower_phenotyping/results/figures/20260529_hsv_3dpca.png")
+
+
+# ===============================
+# VARIANCE PER COMPONENT IN PCA
+# ===============================
+# PCA
+explained_var = np.var(X_pca, axis=0) / np.var(X_pca, axis=0).sum()
+
+# Plot
+plt.figure(figsize=(8,5))
+plt.bar(
+    range(1, len(explained_var)+1),
+    explained_var * 100
+)
+
+plt.xlabel("Principal Components")
+plt.ylabel("Explained Variance (%)")
+plt.title("Explained Variance by Principal Components")
+
+plt.xticks(range(1, len(explained_var)+1))
+plt.show()
+plt.savefig("/home/martinez/flower_phenotyping/results/figures/20260529_variance_PCA.png")
+
 
 # ==========================
 # IMAGE FOLDER PER CLUSTER
