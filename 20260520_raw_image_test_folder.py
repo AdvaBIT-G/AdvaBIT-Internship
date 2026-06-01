@@ -2,13 +2,13 @@ import os
 import shutil
 
 # PNG folder (test masks)
-png_folder = r"/home/martinez/flower_phenotyping/data/annotations/color_annotations/groundTruth"
+png_folder = r"/home/martinez/flower_phenotyping/data/DINOv2/train"
 
 # JPEG folder to search the raw images
 jpg_folder = r"/home/martinez/flower_phenotyping/data/raw"
 
 # Final folder
-final_folder = r"/home/martinez/flower_phenotyping/data/full_model_testing/groundTruth"
+final_folder = r"/home/martinez/flower_phenotyping/data/DINOv2/train"
 
 # Create final folder if it does not exist
 os.makedirs(final_folder, exist_ok=True)
