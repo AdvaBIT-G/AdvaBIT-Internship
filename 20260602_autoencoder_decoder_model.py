@@ -17,7 +17,7 @@ images = []
 for file in os.listdir(TRAIN_DIR):
     path = os.path.join(TRAIN_DIR, file)
     img = Image.open(path).convert('RGB')
-    img = img.resize((224, 224))
+    img = img.resize((64, 64))
     img = np.array(img, dtype=np.float32) / 255.0
     images.append(img)
 
@@ -26,26 +26,34 @@ images = np.array(images)
 x_train = images
 y_train = images
 
-inputs = tf.keras.Input(shape=(224, 224, 3))
+inputs = tf.keras.Input(shape=(64, 64, 3))
 
 # =====================
 # ENCODER
 # =====================
-x = Conv2D(32, 3, activation='relu', padding='same')(inputs)
+x = Conv2D(128, 3, activation='relu', padding='same')(inputs)
 x = MaxPooling2D(2)(x)
 
 x = Conv2D(64, 3, activation='relu', padding='same')(x)
 x = MaxPooling2D(2)(x)
 
-x = Conv2D(128, 3, activation='relu', padding='same')(x)
+x = Conv2D(64, 3, activation='relu', padding='same')(x)
+x = MaxPooling2D(2)(x)
+
+x = Conv2D(64, 3, activation='relu', padding='same')(x)
+x = MaxPooling2D(2)(x)
+
+x = Conv2D(32, 3, activation='relu', padding='same')(x)
 encoded = MaxPooling2D(2)(x)
 
 # =====================
 # DECODER
 # =====================
-x = Conv2DTranspose(128, 3, strides=2, activation='relu', padding='same')(encoded)
+x = Conv2DTranspose(32, 3, strides=2, activation='relu', padding='same')(encoded)
 x = Conv2DTranspose(64, 3, strides=2, activation='relu', padding='same')(x)
-x = Conv2DTranspose(32, 3, strides=2, activation='relu', padding='same')(x)
+x = Conv2DTranspose(64, 3, strides=2, activation='relu', padding='same')(x)
+x = Conv2DTranspose(64, 3, strides=2, activation='relu', padding='same')(x)
+x = Conv2DTranspose(128, 3, strides=2, activation='relu', padding='same')(x)
 
 outputs = Conv2D(3, 3, activation='sigmoid', padding='same')(x)
 
@@ -66,7 +74,7 @@ autoencoder.compile(
 autoencoder.fit(
     x_train,
     y_train,
-    epochs=50,
+    epochs=15,
     batch_size=16,
     validation_split=0.1
 )
