@@ -49,13 +49,13 @@ x = Conv2DTranspose(32, 3, strides=2, activation='relu', padding='same')(x)
 
 outputs = Conv2D(3, 3, activation='sigmoid', padding='same')(x)
 
-autoencoder = tf.keras.models.Model(inputs, outputs)
+autoencoder = tf.keras.Model(inputs, outputs)
 
 # ================
 # COMPILE
 # ================
 autoencoder.compile(
-    optimizer='adam',
+    optimizer=tf.keras.optimizers.Adam(learning_rate=1e-3),
     loss='mse'
 )
 
@@ -66,13 +66,14 @@ autoencoder.compile(
 autoencoder.fit(
     x_train,
     y_train,
-    epochs=10,
-    batch_size=32,
+    epochs=50,
+    batch_size=16,
     validation_split=0.1
 )
 
 
 pred = autoencoder.predict(x_train[:5])
+pred = np.clip(pred, 0.0, 1.0)
 
 for i in range(5):
     plt.figure(figsize=(4,2))
