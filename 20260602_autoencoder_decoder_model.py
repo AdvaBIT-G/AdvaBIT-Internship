@@ -47,28 +47,37 @@ inputs = tf.keras.Input(shape=(224, 224, 3))
 # =====================
 # ENCODER
 # =====================
-x = Conv2D(256, 3, activation='relu', padding='same')(inputs)
-x = MaxPooling2D(2)(x)
+x1 = Conv2D(256, 3, activation='relu', padding='same')(inputs)
+p1 = MaxPooling2D(2)(x1)
 
-x = Conv2D(128, 3, activation='relu', padding='same')(x)
-x = MaxPooling2D(2)(x)
+x2 = Conv2D(128, 3, activation='relu', padding='same')(p1)
+p2 = MaxPooling2D(2)(x2)
 
 attn = MultiHeadAttention(
     num_heads=4,
     key_dim=32
-)(x, x)
+)(p2, p2)
 
-x = Add()([x, attn])
+x2_attn = Add()([p2, attn])
 
-x = Conv2D(64, 3, activation='relu', padding='same')(x)
-encoded = MaxPooling2D(2)(x)
+x3 = Conv2D(64, 3, activation='relu', padding='same')(x2_attn)
+encoded = MaxPooling2D(2)(x3)
+
+# ===================
+# BOTTLENECK
+# ===================
+
+b = Conv2D(64, 3, activation='relu', padding='same')(encoded)
 
 # =====================
 # DECODER
 # =====================
-x = Conv2DTranspose(64, 3, strides=2, activation='relu', padding='same')(encoded)
+x = Conv2DTranspose(64, 3, strides=2, activation='relu', padding='same')(b)
+x = Add()([x, x3])
 x = Conv2DTranspose(128, 3, strides=2, activation='relu', padding='same')(x)
+x = Add()([x, x2])
 x = Conv2DTranspose(256, 3, strides=2, activation='relu', padding='same')(x)
+x = Add()([x, x1])
 
 outputs = Conv2D(3, 3, activation='sigmoid', padding='same')(x)
 
