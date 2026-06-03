@@ -4,7 +4,7 @@ import os
 from PIL import Image
 import tensorflow as tf
 import matplotlib.pyplot as plt
-from keras.layers import Conv2D, Conv2DTranspose, MaxPooling2D 
+from keras.layers import Conv2D, Conv2DTranspose, MaxPooling2D, MultiHeadAttention, Add
 
 TRAIN_DIR = "/home/martinez/flower_phenotyping/data/annotations/color_annotations/train"
 TEST_DIR = "/home/martinez/flower_phenotyping/data/DINOv2/test"
@@ -47,21 +47,28 @@ inputs = tf.keras.Input(shape=(224, 224, 3))
 # =====================
 # ENCODER
 # =====================
-x = Conv2D(128, 3, activation='relu', padding='same')(inputs)
+x = Conv2D(256, 3, activation='relu', padding='same')(inputs)
 x = MaxPooling2D(2)(x)
+
+x = Conv2D(128, 3, activation='relu', padding='same')(x)
+x = MaxPooling2D(2)(x)
+
+attn = MultiHeadAttention(
+    num_heads=4,
+    key_dim=32
+)(x, x)
+
+x = Add()([x, attn])
 
 x = Conv2D(64, 3, activation='relu', padding='same')(x)
-x = MaxPooling2D(2)(x)
-
-x = Conv2D(32, 3, activation='relu', padding='same')(x)
 encoded = MaxPooling2D(2)(x)
 
 # =====================
 # DECODER
 # =====================
-x = Conv2DTranspose(32, 3, strides=2, activation='relu', padding='same')(encoded)
-x = Conv2DTranspose(64, 3, strides=2, activation='relu', padding='same')(x)
+x = Conv2DTranspose(64, 3, strides=2, activation='relu', padding='same')(encoded)
 x = Conv2DTranspose(128, 3, strides=2, activation='relu', padding='same')(x)
+x = Conv2DTranspose(256, 3, strides=2, activation='relu', padding='same')(x)
 
 outputs = Conv2D(3, 3, activation='sigmoid', padding='same')(x)
 
@@ -72,7 +79,7 @@ autoencoder = tf.keras.Model(inputs, outputs)
 # ================
 autoencoder.compile(
     optimizer=tf.keras.optimizers.Adam(learning_rate=1e-3),
-    loss='mse'
+    loss='mae'
 )
 
 # =============
