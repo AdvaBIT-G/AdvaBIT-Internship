@@ -1,11 +1,12 @@
 import numpy as np
+import cv2
 import os
 from PIL import Image
 import tensorflow as tf
 import matplotlib.pyplot as plt
 from keras.layers import Conv2D, Conv2DTranspose, MaxPooling2D 
 
-TRAIN_DIR = "/home/martinez/flower_phenotyping/data/DINOv2/train"
+TRAIN_DIR = "/home/martinez/flower_phenotyping/data/annotations/color_annotations/train"
 TEST_DIR = "/home/martinez/flower_phenotyping/data/DINOv2/test"
 VAL_DIR = "/home/martinez/flower_phenotyping/data/DINOv2/groundTruth"
 
@@ -16,28 +17,37 @@ images = []
 
 for file in os.listdir(TRAIN_DIR):
     path = os.path.join(TRAIN_DIR, file)
-    img = Image.open(path).convert('RGB')
-    img = img.resize((64, 64))
-    img = np.array(img, dtype=np.float32) / 255.0
-    images.append(img)
+    img = cv2.imread(path)
+    mask = np.sum(img, axis=2) > 20
+    ys, xs = np.where(mask)
+
+    if len(xs) == 0 or len(ys) == 0:
+        continue
+
+    xmin, xmax = xs.min(), xs.max()
+    ymin, ymax = ys.min(), ys.max()
+
+   
+    crop = img[ymin:ymax+1, xmin:xmax+1]
+
+
+    crop = cv2.resize(crop, (224, 224))
+
+    crop = crop.astype(np.float32) / 255.0
+
+    images.append(crop)
 
 images = np.array(images)
 
 x_train = images
 y_train = images
 
-inputs = tf.keras.Input(shape=(64, 64, 3))
+inputs = tf.keras.Input(shape=(224, 224, 3))
 
 # =====================
 # ENCODER
 # =====================
 x = Conv2D(128, 3, activation='relu', padding='same')(inputs)
-x = MaxPooling2D(2)(x)
-
-x = Conv2D(64, 3, activation='relu', padding='same')(x)
-x = MaxPooling2D(2)(x)
-
-x = Conv2D(64, 3, activation='relu', padding='same')(x)
 x = MaxPooling2D(2)(x)
 
 x = Conv2D(64, 3, activation='relu', padding='same')(x)
@@ -50,8 +60,6 @@ encoded = MaxPooling2D(2)(x)
 # DECODER
 # =====================
 x = Conv2DTranspose(32, 3, strides=2, activation='relu', padding='same')(encoded)
-x = Conv2DTranspose(64, 3, strides=2, activation='relu', padding='same')(x)
-x = Conv2DTranspose(64, 3, strides=2, activation='relu', padding='same')(x)
 x = Conv2DTranspose(64, 3, strides=2, activation='relu', padding='same')(x)
 x = Conv2DTranspose(128, 3, strides=2, activation='relu', padding='same')(x)
 
