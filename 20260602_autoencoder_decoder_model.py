@@ -67,17 +67,14 @@ encoded = MaxPooling2D(2)(x3)
 # BOTTLENECK
 # ===================
 
-b = Conv2D(64, 3, activation='relu', padding='same')(encoded)
+b = Conv2D(256, 3, activation='relu', padding='same')(encoded)
 
 # =====================
 # DECODER
 # =====================
 x = Conv2DTranspose(64, 3, strides=2, activation='relu', padding='same')(b)
-x = Add()([x, x3])
 x = Conv2DTranspose(128, 3, strides=2, activation='relu', padding='same')(x)
-x = Add()([x, x2])
 x = Conv2DTranspose(256, 3, strides=2, activation='relu', padding='same')(x)
-x = Add()([x, x1])
 
 outputs = Conv2D(3, 3, activation='sigmoid', padding='same')(x)
 
@@ -87,7 +84,7 @@ autoencoder = tf.keras.Model(inputs, outputs)
 # COMPILE
 # ================
 autoencoder.compile(
-    optimizer=tf.keras.optimizers.Adam(learning_rate=1e-3),
+    optimizer=tf.keras.optimizers.Adam(learning_rate=1e-4),
     loss='mae'
 )
 
@@ -98,7 +95,7 @@ autoencoder.compile(
 autoencoder.fit(
     x_train,
     y_train,
-    epochs=15,
+    epochs=100,
     batch_size=16,
     validation_split=0.1
 )
@@ -119,7 +116,9 @@ for i in range(5):
     plt.subplot(1,2,2)
     plt.imshow(pred[i])
     plt.title("Reconstructed")
-
+    plt.savefig(f'/home/martinez/flower_phenotyping/results/figures/20260603_autoencoder_reconstruction_{i}.png', bbox_inches='tight')
     plt.show()
+    plt.close()
+
 
 autoencoder.summary()
