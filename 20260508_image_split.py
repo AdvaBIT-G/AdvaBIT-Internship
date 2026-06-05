@@ -6,12 +6,12 @@ import shutil
 # CONFIG
 # =========================
 
-SOURCE_DIR = "/home/martinez/flower_phenotyping/data/annotations/YOLO_annotations/masks/segmented_color"
-OUTPUT_DIR = "/home/martinez/flower_phenotyping/data/annotations/color_annotations"
+SOURCE_DIR = "/home/martinez/flower_phenotyping/data/DINOv2/raw"
+OUTPUT_DIR = "/home/martinez/flower_phenotyping/data/DINOv2"
 
-TRAIN_RATIO = 0.7
-VAL_RATIO = 0.15
-TEST_RATIO = 0.15
+TRAIN_RATIO = 0.8
+VAL_RATIO = 0.10
+TEST_RATIO = 0.10
 
 SEED = 42
 
@@ -42,7 +42,7 @@ test_files = files[n_train + n_val:]
 
 splits = {
     "train": train_files,
-    "val": val_files,
+    "groundTruth": val_files,
     "test": test_files
 }
 
@@ -80,7 +80,7 @@ for split_name, split_files in splits.items():
 # =========================
 
 print("Train:", len(train_files))
-print("Val:", len(val_files))
+print("groundTruth:", len(val_files))
 print("Test:", len(test_files))
 
 print("Done.")
