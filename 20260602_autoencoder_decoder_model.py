@@ -5,18 +5,63 @@ from PIL import Image
 import tensorflow as tf
 import matplotlib.pyplot as plt
 from keras.layers import Conv2D, Conv2DTranspose, MaxPooling2D, MultiHeadAttention, Add
+from ultralytics import YOLO
 
-TRAIN_DIR = "/home/martinez/flower_phenotyping/data/annotations/color_annotations/train"
-TEST_DIR = "/home/martinez/flower_phenotyping/data/DINOv2/test"
-VAL_DIR = "/home/martinez/flower_phenotyping/data/DINOv2/groundTruth"
+# =========================
+# CONFIG
+# =========================
+
+RAW_DIR = "/home/martinez/flower_phenotyping/data/DINOv2/train"
+MASK_DIR = "/home/martinez/flower_phenotyping/data/DINOv2/masks"
+
+# =====================================
+# FLOWER SEGMENTATION USING YOLO MODEL
+# =====================================
+yolo_model = YOLO("/home/martinez/flower_phenotyping/models/yolo/weights/best.pt")
+
+results = yolo_model.predict(
+    source=RAW_DIR,
+    imgsz=1024,
+    conf=0.3,
+    device='cpu',
+    save=True  
+)
+
+# folder for masks
+mask_dir = MASK_DIR
+os.makedirs(mask_dir, exist_ok=True)
+
+for r in results:
+
+    if r.masks is None:
+        continue
+
+    original_name = os.path.basename(r.path)
+    filename = os.path.splitext(original_name)[0] + ".png"
+
+    h, w = r.orig_shape
+    combined_mask = np.zeros((h, w), dtype=np.uint8)
+
+    for mask in r.masks.data:
+        m = mask.cpu().numpy()
+        m = cv2.resize(m, (w, h), interpolation=cv2.INTER_NEAREST)
+        m = (m > 0).astype(np.uint8)
+        combined_mask = np.maximum(combined_mask, m)
+
+    combined_mask = combined_mask.astype(np.uint8)
+
+    cv2.imwrite(os.path.join(mask_dir, filename), combined_mask * 255)
+
+print("✅ Masks saved")
+
 
 # ===========
 # DATASET
 # ===========
 images = []
 
-for file in os.listdir(TRAIN_DIR):
-    path = os.path.join(TRAIN_DIR, file)
+for file in os.listdir(MASK_DIR):
+    path = os.path.join(MASK_DIR, file)
     img = cv2.imread(path)
     mask = np.sum(img, axis=2) > 20
     ys, xs = np.where(mask)
