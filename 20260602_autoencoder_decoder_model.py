@@ -17,10 +17,11 @@ MASK_DIR = "/home/martinez/flower_phenotyping/data/DINOv2/masks"
 # =====================================
 # FLOWER SEGMENTATION USING YOLO MODEL
 # =====================================
+ 
 yolo_model = YOLO("/home/martinez/flower_phenotyping/models/yolo/weights/best.pt")
 
 results = yolo_model.predict(
-    source=RAW_DIR,
+    source= RAW_DIR,
     imgsz=1024,
     conf=0.3,
     device='cpu',
@@ -33,12 +34,15 @@ mask_dir = MASK_DIR
 os.makedirs(mask_dir, exist_ok=True)
 
 for r in results:
-
+    if r.orig_img is None:
+        print(f"Empty image: {r.path}")
+        continue
     if r.masks is None:
+        print("No masks")
         continue
 
     original_name = os.path.basename(r.path)
-    filename = os.path.splitext(original_name)[0] + ".png"
+    stem = os.path.splitext(original_name)[0]
 
     h, w = r.orig_shape
     combined_mask = np.zeros((h, w), dtype=np.uint8)
@@ -46,21 +50,16 @@ for r in results:
     for mask in r.masks.data:
         m = mask.cpu().numpy()
         m = cv2.resize(m, (w, h), interpolation=cv2.INTER_NEAREST)
-        m = (m > 0).astype(np.uint8)
+        m = (m > 0.5).astype(np.uint8)
         combined_mask = np.maximum(combined_mask, m)
 
-    combined_mask = combined_mask.astype(np.uint8)
-
-    cv2.imwrite(os.path.join(mask_dir, filename), combined_mask * 255)
-
-    #Segmented image (real color)
+   #Save segmented image (real color)
     img = r.orig_img.copy()
-
     segmented = cv2.bitwise_and(img, img, mask=combined_mask)
+    seg_path = os.path.join(MASK_DIR, f"{stem}.png")
+    cv2.imwrite(seg_path, segmented)
 
-    cv2.imwrite(os.path.join(mask_dir, filename + ".png"), segmented)
-
-print("✅ Binary masks and segmented images saved")
+print("✅ Segmented images saved")
 
 
 # ===========
