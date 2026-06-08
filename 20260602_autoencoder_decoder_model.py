@@ -24,7 +24,8 @@ results = yolo_model.predict(
     imgsz=1024,
     conf=0.3,
     device='cpu',
-    save=True  
+    save=True,
+    stream=True  
 )
 
 # folder for masks
@@ -52,7 +53,14 @@ for r in results:
 
     cv2.imwrite(os.path.join(mask_dir, filename), combined_mask * 255)
 
-print("✅ Masks saved")
+    #Segmented image (real color)
+    img = r.orig_img.copy()
+
+    segmented = cv2.bitwise_and(img, img, mask=combined_mask)
+
+    cv2.imwrite(os.path.join(mask_dir, filename + ".png"), segmented)
+
+print("✅ Binary masks and segmented images saved")
 
 
 # ===========
