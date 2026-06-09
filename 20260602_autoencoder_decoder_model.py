@@ -6,6 +6,7 @@ import tensorflow as tf
 import matplotlib.pyplot as plt
 from keras.layers import Conv2D, Conv2DTranspose, MaxPooling2D, MultiHeadAttention, Add
 from ultralytics import YOLO
+from keras.callbacks import ModelCheckpoint
 
 # =========================
 # CONFIG
@@ -140,23 +141,44 @@ autoencoder.compile(
     loss='mae'
 )
 
+# =====================
+# Save every 10 epochs
+# =====================
+
+
+checkpoint = ModelCheckpoint(
+    filepath='/home/martinez/flower_phenotyping/models/autoencoder/checkpoints/model_epoch_{epoch:03d}.keras',
+    save_freq='epoch',
+    save_weights_only=False
+)
+
+class SaveEvery10Epochs(tf.keras.callbacks.Callback):
+    def on_epoch_end(self, epoch, logs=None):
+        if (epoch + 1) % 10 == 0:
+            self.model.save(
+                f'/home/martinez/flower_phenotyping/models/autoencoder/checkpoints/model_epoch_{epoch+1:03d}.keras'
+            )
+
+
 # =============
 # TRAIN
 # =============
 
+
 autoencoder.fit(
     x_train,
     y_train,
-    epochs=100,
+    epochs=200,
     batch_size=16,
-    validation_split=0.1
+    validation_split=0.1,
+    callbacks=[SaveEvery10Epochs()]
 )
 
 
-pred = autoencoder.predict(x_train[:5])
+pred = autoencoder.predict(x_train[:50])
 pred = np.clip(pred, 0.0, 1.0)
 
-for i in range(5):
+for i in range(50):
     plt.figure(figsize=(4,2))
 
     # original
