@@ -1,7 +1,7 @@
 import os
 
-origin_folder = "/home/martinez/flower_phenotyping/results/YOLO/groundTruth/images"
-new_folder = "/home/martinez/flower_phenotyping/data/raw"
+origin_folder = "/home/martinez/internship_howest/AdvaBIT-Internship/flower_phenotyping/results/YOLO/groundTruth/images"
+new_folder = "/home/martinez/internship_howest/AdvaBIT-Internship/flower_phenotyping/data/raw"
 
 # Obtain file names 
 origin_files = set(
