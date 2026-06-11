@@ -5,7 +5,7 @@ import numpy as np
 # CONFIG
 # =========================================================
 
-CSV = "/home/martinez/flower_phenotyping/data/annotations/color_annotations/20260508_mask_color_percentages.csv"
+CSV = "/home/martinez/internship_howest/AdvaBIT-Internship/flower_phenotyping/data/annotations/color_annotations/20260508_mask_color_percentages.csv"
 
 FEATURES = [
     "green",
@@ -147,9 +147,9 @@ doubtful = df[
 # EXPORT
 # =========================================================
 
-df.to_csv("/home/martinez/flower_phenotyping/data/annotations/color_annotations/20260518_classified_images.csv", index=False)
-doubtful.to_csv("/home/martinez/flower_phenotyping/data/annotations/color_annotations/20260518_doubtful_images.csv", index=False)
-centroids.to_csv("/home/martinez/flower_phenotyping/data/annotations/color_annotations/20260518_centroids.csv")
+df.to_csv("/home/martinez/internship_howest/AdvaBIT-Internship/flower_phenotyping/data/annotations/color_annotations/20260518_classified_images.csv", index=False)
+doubtful.to_csv("/home/martinez/internship_howest/AdvaBIT-Internship/flower_phenotyping/data/annotations/color_annotations/20260518_doubtful_images.csv", index=False)
+centroids.to_csv("/home/martinez/internship_howest/AdvaBIT-Internship/flower_phenotyping/data/annotations/color_annotations/20260518_centroids.csv")
 
 # =========================================================
 # SUMMARY
