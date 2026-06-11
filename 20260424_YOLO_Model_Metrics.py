@@ -5,8 +5,8 @@ import numpy as np
 # =========================
 # PATHS
 # =========================
-gt_dir = "/home/martinez/flower_phenotyping/results/YOLO/groundTruth/png_masks"
-pred_dir = "/home/martinez/flower_phenotyping/results/YOLO/pred_masks" 
+gt_dir = "/home/martinez/internship_howest/AdvaBIT-Internship/flower_phenotyping/results/YOLO/groundTruth/png_masks"
+pred_dir = "/home/martinez/internship_howest/AdvaBIT-Internship/flower_phenotyping/results/YOLO/pred_masks" 
 
 # =========================
 # METRICS STORAGE
