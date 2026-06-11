@@ -8,7 +8,7 @@ from scipy.cluster.hierarchy import linkage, dendrogram, fcluster
 # =========================
 # 1. LOAD DATA
 # =========================
-df = pd.read_csv("/home/martinez/flower_phenotyping/data/annotations/YOLO_annotations/20260505_color_features.csv")
+df = pd.read_csv("/home/martinez/internship_howest/AdvaBIT-Internship/flower_phenotyping/data/annotations/YOLO_annotations/20260505_color_features.csv")
 
 # =========================
 # 2. SELECT FEATURES
@@ -55,7 +55,7 @@ dendrogram(Z)
 plt.title("Dendrogram")
 plt.xlabel("Samples")
 plt.ylabel("Distance")
-plt.savefig("/home/martinez/flower_phenotyping/results/figures/20260507_color_dendrogram.png")
+plt.savefig("/home/martinez/internship_howest/AdvaBIT-Internship/flower_phenotyping/results/figures/20260507_color_dendrogram.png")
 plt.close()
 
 # =========================
@@ -84,7 +84,7 @@ plt.plot(K_range, wss, marker='o')
 plt.title("Elbow Method")
 plt.xlabel("k")
 plt.ylabel("WSS")
-plt.savefig("/home/martinez/flower_phenotyping/results/figures/20260507_elbow_plot.png")
+plt.savefig("/home/martinez/internship_howest/AdvaBIT-Internship/flower_phenotyping/results/figures/20260507_elbow_plot.png")
 plt.close()
 
 # =========================
@@ -114,14 +114,14 @@ plt.axhline(0, color='gray', linestyle='--', linewidth=1)
 plt.axvline(0, color='gray', linestyle='--', linewidth=1)
 plt.colorbar(scatter)
 
-plt.savefig("/home/martinez/flower_phenotyping/results/figures/hsv_clusters.png", dpi=300)
+plt.savefig("/home/martinez/internship_howest/AdvaBIT-Internship/flower_phenotyping/results/figures/hsv_clusters.png", dpi=300)
 plt.close()
 
 # =========================
 # 10. SAVE RESULTS
 # =========================
 df['cluster'] = clusters
-df.to_csv("/home/martinez/flower_phenotyping/results/20260518_4_cluster_results.csv", index=False)
+df.to_csv("/home/martinez/internship_howest/AdvaBIT-Internship/flower_phenotyping/results/20260518_4_cluster_results.csv", index=False)
 
 print(df.head())
 
