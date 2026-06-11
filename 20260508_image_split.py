@@ -6,8 +6,8 @@ import shutil
 # CONFIG
 # =========================
 
-SOURCE_DIR = "/home/martinez/flower_phenotyping/data/DINOv2/raw"
-OUTPUT_DIR = "/home/martinez/flower_phenotyping/data/DINOv2"
+SOURCE_DIR = "/home/martinez/internship_howest/AdvaBIT-Internship/flower_phenotyping/data/DINOv2/raw"
+OUTPUT_DIR = "/home/martinez/internship_howest/AdvaBIT-Internship/flower_phenotyping/data/DINOv2"
 
 TRAIN_RATIO = 0.8
 VAL_RATIO = 0.10
