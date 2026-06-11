@@ -6,8 +6,8 @@ import os
 # =========================
 # PATHS
 # =========================
-input_dir = "/home/martinez/flower_phenotyping/results/YOLO/groundTruth/masks"
-output_dir = "/home/martinez/flower_phenotyping/results/YOLO/groundTruth/png_masks"
+input_dir = "/home/martinez/internship_howest/AdvaBIT-Internship/flower_phenotyping/results/YOLO/groundTruth/masks"
+output_dir = "/home/martinez/internship_howest/AdvaBIT-Internship/flower_phenotyping/results/YOLO/groundTruth/png_masks"
 os.makedirs(output_dir, exist_ok=True)
 
 # =========================
