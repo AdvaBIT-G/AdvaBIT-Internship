@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # ─── PATHS ───────────────────────────────────────────────────────────────────
-BASE="/home/martinez/flower_phenotyping/data"
+BASE="/home/martinez/internship_howest/AdvaBIT-Internship/flower_phenotyping/data"
 WORK="${BASE}/YOLO"
 
 RAW_ORI="${BASE}/raw"
@@ -72,7 +72,7 @@ import os
 BASE = os.environ["SAHI"]
 YOLO = os.environ["YOLO"]
 
-PLANTA_NAME = "planta"   # ⚠️ corregido
+PLANTA_NAME = "plant"   
 
 def normalize(poly, w, h):
     return [
@@ -252,7 +252,7 @@ grep -r " 1 " "${YOLO}/labels/train" || true
 log "Starting training..."
 
 yolo task=segment mode=train \
-    model=/home/martinez/flower_phenotyping/data/YOLO/yolo11s-seg.pt \
+    model=/home/martinez/internship_howest/AdvaBIT-Internship/flower_phenotyping/data/YOLO/yolo11s-seg.pt \
     data="${WORK}/data.yaml" \
     imgsz=640 \
     epochs=200 \
