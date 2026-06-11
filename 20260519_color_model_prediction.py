@@ -12,8 +12,8 @@ import shutil
 # CONFIG
 # =========================
 
-TEST_RAW_DIR = "/home/martinez/flower_phenotyping/data/full_model_testing/test"
-TEST_MASK_DIR = "/home/martinez/flower_phenotyping/data/full_model_testing/masks"
+TEST_RAW_DIR = "/home/martinez/internship_howest/AdvaBIT-Internship/flower_phenotyping/data/full_model_testing/test"
+TEST_MASK_DIR = "/home/martinez/internship_howest/AdvaBIT-Internship/flower_phenotyping/data/full_model_testing/masks"
 
 
 FEATURE_ORDER = [ 
@@ -49,7 +49,7 @@ FEATURE_ORDER = [
 # =====================================
 # FLOWER SEGMENTATION USING YOLO MODEL
 # =====================================
-yolo_model = YOLO("/home/martinez/flower_phenotyping/models/yolo/weights/best.pt")
+yolo_model = YOLO("/home/martinez/internship_howest/AdvaBIT-Internship/flower_phenotyping/models/yolo/weights/best.pt")
 
 results = yolo_model.predict(
     source=TEST_RAW_DIR,
@@ -233,7 +233,7 @@ X = features_df.drop(columns=["image"])
 # =================
 # LOAD COLOR MODEL
 # =================
-svm = load('/home/martinez/flower_phenotyping/models/color/flower_color_model_svm.joblib')
+svm = load('/home/martinez/internship_howest/AdvaBIT-Internship/flower_phenotyping/models/color/flower_color_model_svm.joblib')
 
 # =================
 # PREDICTION
@@ -252,18 +252,18 @@ features_df['confidence'] = confidence
 
 print(features_df[["image", "cluster_prediction", "prob_cluster1", "confidence", "prob_cluster2", "prob_cluster3", "prob_cluster4"]])
 
-features_df.to_csv("/home/martinez/flower_phenotyping/results/color/20260521_color_predictions.csv", index=False)
+features_df.to_csv("/home/martinez/internship_howest/AdvaBIT-Internship/flower_phenotyping/results/color/20260521_color_predictions.csv", index=False)
 
-print("✅ Results saved to /home/martinez/flower_phenotyping/results/color/20260526_color_predictions.csv")
+print("✅ Results saved to /home/martinez/internship_howest/AdvaBIT-Internship/flower_phenotyping/results/color/20260526_color_predictions.csv")
 
 # ==========================
 # IMAGE FOLDER PER CLUSTER
 # ==========================
 
 #Paths
-csv_file = '/home/martinez/flower_phenotyping/results/color/20260526_color_predictions.csv'
-source_folder = '/home/martinez/flower_phenotyping/data/raw'
-output_folder = '/home/martinez/flower_phenotyping/results/color/'
+csv_file = '/home/martinez/internship_howest/AdvaBIT-Internship/flower_phenotyping/results/color/20260526_color_predictions.csv'
+source_folder = '/home/martinez/internship_howest/AdvaBIT-Internship/flower_phenotyping/data/raw'
+output_folder = '/home/martinez/internship_howest/AdvaBIT-Internship/flower_phenotyping/results/color/'
 
 #Read csv
 df = pd.read_csv(csv_file)
