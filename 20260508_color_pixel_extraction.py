@@ -8,8 +8,8 @@ from collections import Counter
 # CONFIG
 # =========================
 
-MASK_DIR = "/home/martinez/flower_phenotyping/data/annotations/color_annotations/train"
-OUTPUT_CSV = "/home/martinez/flower_phenotyping/data/annotations/color_annotations/20260508_mask_color_percentages.csv"
+MASK_DIR = "/home/martinez/internship_howest/AdvaBIT-Internship/flower_phenotyping/data/annotations/color_annotations/train"
+OUTPUT_CSV = "/home/martinez/internship_howest/AdvaBIT-Internship/flower_phenotyping/data/annotations/color_annotations/20260508_mask_color_percentages.csv"
 
 EXTENSIONS = (".jpg", ".jpeg", ".png")
 
