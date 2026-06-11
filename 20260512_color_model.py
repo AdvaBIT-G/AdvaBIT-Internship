@@ -13,7 +13,7 @@ from sklearn.metrics import accuracy_score, f1_score
 from sklearn.model_selection import GridSearchCV
 from joblib import dump
 from sklearn.pipeline import Pipeline
-CSV = '/home/martinez/flower_phenotyping/data/annotations/color_annotations/20260518_color_training_dataset.csv'
+CSV = '/home/martinez/internship_howest/AdvaBIT-Internship/flower_phenotyping/data/annotations/color_annotations/20260518_color_training_dataset.csv'
 
 df = pd.read_csv(CSV)
 
@@ -296,4 +296,4 @@ pipeline.fit(X_train, y_train)
 # SAVE THE MODEL AND THE SCALER
 ################################
 
-dump(pipeline, '/home/martinez/flower_phenotyping/models/color/flower_color_model_svm.joblib')
+dump(pipeline, '/home/martinez/internship_howest/AdvaBIT-Internship/flower_phenotyping/models/color/flower_color_model_svm.joblib')
