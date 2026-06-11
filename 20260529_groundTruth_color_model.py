@@ -14,8 +14,8 @@ from joblib import load
 # CONFIG
 # =========================
 
-TEST_RAW_DIR = "/home/martinez/flower_phenotyping/data/full_model_testing/groundTruth"
-TEST_MASK_DIR = "/home/martinez/flower_phenotyping/data/annotations/color_annotations/groundTruth"
+TEST_RAW_DIR = "/home/martinez/internship_howest/AdvaBIT-Internship/flower_phenotyping/data/full_model_testing/groundTruth"
+TEST_MASK_DIR = "/home/martinez/internship_howest/AdvaBIT-Internship/flower_phenotyping/data/annotations/color_annotations/groundTruth"
 
 FEATURE_ORDER = [ 
 
@@ -194,7 +194,7 @@ X = features_df.drop(columns=["image"])
 # =================
 # LOAD COLOR MODEL
 # =================
-svm = load('/home/martinez/flower_phenotyping/models/color/flower_color_model_svm.joblib')
+svm = load('/home/martinez/internship_howest/AdvaBIT-Internship/flower_phenotyping/models/color/flower_color_model_svm.joblib')
 
 # =================
 # PREDICTION
@@ -220,7 +220,7 @@ print(features_df[["image", "cluster_prediction", "prob_cluster1", "prob_cluster
 # LOAD GROUND TRUTH AND PREDICTION DATASETS
 # ==========================================
 
-gt_df = pd.read_csv('/home/martinez/flower_phenotyping/data/annotations/color_annotations/20260529_groundTruth.csv')
+gt_df = pd.read_csv('/home/martinez/internship_howest/AdvaBIT-Internship/flower_phenotyping/data/annotations/color_annotations/20260529_groundTruth.csv')
 
 pred_df = features_df
 
@@ -266,7 +266,7 @@ cm = confusion_matrix(
 )
 sns.heatmap(cm, annot=True, fmt='d')
 plt.show()
-plt.savefig("/home/martinez/flower_phenotyping/results/figures/20260529_conf_matrix_groundTruth")
+plt.savefig("/home/martinez/internship_howest/AdvaBIT-Internship/flower_phenotyping/results/figures/20260529_conf_matrix_groundTruth")
 
 # Classification report
 
