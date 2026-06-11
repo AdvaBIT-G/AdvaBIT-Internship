@@ -12,14 +12,14 @@ from keras.callbacks import ModelCheckpoint
 # CONFIG
 # =========================
 
-RAW_DIR = "/home/martinez/flower_phenotyping/data/DINOv2/train"
-MASK_DIR = "/home/martinez/flower_phenotyping/data/DINOv2/masks"
+RAW_DIR = "/home/martinez/internship_howest/AdvaBIT-Internship/flower_phenotyping/data/DINOv2/train"
+MASK_DIR = "/home/martinez/internship_howest/AdvaBIT-Internship/flower_phenotyping/data/DINOv2/masks"
 
 # =====================================
 # FLOWER SEGMENTATION USING YOLO MODEL
 # =====================================
  
-yolo_model = YOLO("/home/martinez/flower_phenotyping/models/yolo/weights/best.pt")
+yolo_model = YOLO("/home/martinez/internship_howest/AdvaBIT-Internship/flower_phenotyping/models/yolo/weights/best.pt")
 
 results = yolo_model.predict(
     source= RAW_DIR,
@@ -147,7 +147,7 @@ autoencoder.compile(
 
 
 checkpoint = ModelCheckpoint(
-    filepath='/home/martinez/flower_phenotyping/models/autoencoder/checkpoints/model_epoch_{epoch:03d}.keras',
+    filepath='/home/martinez/internship_howest/AdvaBIT-Internship/flower_phenotyping/models/autoencoder/checkpoints/model_epoch_{epoch:03d}.keras',
     save_freq='epoch',
     save_weights_only=False
 )
@@ -156,7 +156,7 @@ class SaveEvery10Epochs(tf.keras.callbacks.Callback):
     def on_epoch_end(self, epoch, logs=None):
         if (epoch + 1) % 10 == 0:
             self.model.save(
-                f'/home/martinez/flower_phenotyping/models/autoencoder/checkpoints/model_epoch_{epoch+1:03d}.keras'
+                f'/home/martinez/internship_howest/AdvaBIT-Internship/flower_phenotyping/models/autoencoder/checkpoints/model_epoch_{epoch+1:03d}.keras'
             )
 
 
@@ -190,7 +190,7 @@ for i in range(50):
     plt.subplot(1,2,2)
     plt.imshow(pred[i])
     plt.title("Reconstructed")
-    plt.savefig(f'/home/martinez/flower_phenotyping/results/figures/20260603_autoencoder_reconstruction_{i}.png', bbox_inches='tight')
+    plt.savefig(f'/home/martinez/internship_howest/AdvaBIT-Internship/flower_phenotyping/results/figures/20260603_autoencoder_reconstruction_{i}.png', bbox_inches='tight')
     plt.show()
     plt.close()
 
