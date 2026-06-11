@@ -71,7 +71,7 @@ def main() -> None:
     )
     ap.add_argument(
         "--base",
-        default="/home/martinez/flower_phenotyping/data/annotations/YOLO",
+        default="/home/martinez/internship_howest/AdvaBIT-Internship/flower_phenotyping/data/annotations/YOLO",
         help="Base directory for annotations",
     )
     ap.add_argument("--slice-height",  type=int,   default=1024, help="Slice height in pixels")
