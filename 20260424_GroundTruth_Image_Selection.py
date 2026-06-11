@@ -3,10 +3,10 @@ import random
 import shutil
 
 
-all_img_dir = "/home/martinez/flower_phenotyping/data/raw"
-train_dir = "/home/martinez/flower_phenotyping/data/YOLO/raw_data"
+all_img_dir = "/home/martinez/internship_howest/AdvaBIT-Internship/flower_phenotyping/data/raw"
+train_dir = "/home/martinez/internship_howest/AdvaBIT-Internship/flower_phenotyping/data/YOLO/raw_data"
 
-out_dir = "/home/martinez/flower_phenotyping/results/YOLO/groundTruth/images"
+out_dir = "/home/martinez/internship_howest/AdvaBIT-Internship/flower_phenotyping/results/YOLO/groundTruth/images"
 
 os.makedirs(out_dir, exist_ok=True)
 
