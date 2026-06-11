@@ -4,11 +4,11 @@ import cv2
 import numpy as np
 
 # model
-model = YOLO("/home/martinez/flower_phenotyping/models/yolo/weights/best.pt")
+model = YOLO("/home/martinez/internship_howest/AdvaBIT-Internship/flower_phenotyping/models/yolo/weights/best.pt")
 
 # paths
-input_dir = "/home/martinez/flower_phenotyping/data/raw"
-output_dir = "/home/martinez/flower_phenotyping/data/annotations/YOLO_annotations/masks"
+input_dir = "/home/martinez/internship_howest/AdvaBIT-Internship/flower_phenotyping/data/raw"
+output_dir = "/home/martinez/internship_howest/AdvaBIT-Internship/flower_phenotyping/data/annotations/YOLO_annotations/masks"
 
 mask_dir = os.path.join(output_dir, "masks_binary")
 seg_dir = os.path.join(output_dir, "segmented_color")
