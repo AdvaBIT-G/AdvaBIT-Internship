@@ -200,6 +200,7 @@ autoencoder.summary()
 # ===================
 # FEATURE EXTRACTION
 # ===================
+#Using the last layer before bottleneck
 encoded = MaxPooling2D(2)(x3)
 
 encoder = tf.keras.Model(
@@ -208,3 +209,4 @@ encoder = tf.keras.Model(
 )
 
 features_train = encoder.predict(x_train)
+
