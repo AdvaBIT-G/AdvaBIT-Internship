@@ -7,6 +7,8 @@ import matplotlib.pyplot as plt
 from keras.layers import Conv2D, Conv2DTranspose, MaxPooling2D, MultiHeadAttention, Add
 from ultralytics import YOLO
 from keras.callbacks import ModelCheckpoint
+from sklearn.manifold import TSNE
+
 
 # =========================
 # CONFIG
@@ -210,3 +212,15 @@ encoder = tf.keras.Model(
 
 features_train = encoder.predict(x_train)
 
+# ====================
+# t-SNE visualization
+# ====================
+
+tsne = TSNE(n_components=2, perplexity=30, random_state=42)
+features_2d = tsne.fit_transform(features_train)
+
+plt.figure(figsize=(8,6))
+plt.scatter(features_2d[:,0], features_2d[:,1], s=5)
+plt.title("Latent space t-SNE")
+plt.show()
+plt.savefig("/home/martinez/internship_howest/AdvaBIT-Internship/flower_phenotyping/results/figures/20260618_t-SNE_latent_space.png", dpi=300, bbox_inches="tight")
