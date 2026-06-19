@@ -13,8 +13,8 @@ COCO="${WORK}/coco_out"
 SAHI="${WORK}/coco_sliced"
 YOLO="${WORK}/yolo_dataset"
 
-COCO_SCRIPT="/home/martinez/internship_howest/AdvaBIT-Internship/flower_phenotyping/src/20260611_jsons_to_coco.py"
-SAHI_SCRIPT="/home/martinez/internship_howest/AdvaBIT-Internship/flower_phenotyping/src/20260611_YOLO_SAHI_Training.py"
+COCO_SCRIPT="/home/martinez/internship_howest/AdvaBIT-Internship/disease_phenotyping/src/20260611_jsons_to_coco.py"
+SAHI_SCRIPT="/home/martinez/internship_howest/AdvaBIT-Internship/disease_phenotyping/src/20260611_YOLO_SAHI_Training.py"
 
 log() { echo "[$(date +%H:%M:%S)] $*"; }
 die() { echo "[ERROR] $*" >&2; exit 1; }
@@ -250,7 +250,7 @@ grep -r " 1 " "${YOLO}/labels/train" || true
 log "Starting training..."
 
 yolo task=segment mode=train \
-    model=/home/martinez/internship_howest/AdvaBIT-Internship/flower_phenotyping/data/YOLO/yolo11s-seg.pt \
+    model=/home/martinez/internship_howest/AdvaBIT-Internship/disease_phenotyping/data/YOLO/yolo11s-seg.pt \
     data="${WORK}/data.yaml" \
     imgsz=640 \
     epochs=200 \
@@ -264,6 +264,6 @@ yolo task=segment mode=train \
     scale=0.6 \
     lr0=0.0005 \
     project="${WORK}/runs" \
-    name="train_clean"
+    name="train_leaf"
 
 log "✅ DONE"
