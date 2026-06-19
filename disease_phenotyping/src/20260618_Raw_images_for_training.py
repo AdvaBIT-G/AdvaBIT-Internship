@@ -23,8 +23,8 @@ for file in os.listdir(raw_folder):
     if os.path.isfile(filepath):
         base_name = os.path.splitext(file)[0]
 
-        if base_name in json_folder:
+        if base_name in names:
             shutil.copy2(filepath, new_folder)
-            print(f"Copiado: {file}")
+            print(f"Copied: {file}")
 
 print("Process completed.")
