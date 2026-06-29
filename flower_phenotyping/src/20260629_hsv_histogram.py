@@ -12,7 +12,7 @@ CSV_LABELS = "/home/martinez/internship_howest/AdvaBIT-Internship/flower_phenoty
 
 OUTPUT_CSV = "/home/martinez/internship_howest/AdvaBIT-Internship/flower_phenotyping/data/annotations/color_annotations/HSV_histogram_dataset.csv"
 
-BINS = 16
+BINS = 47
 EXTENSIONS = (".jpg", ".jpeg", ".png")
 
 # =========================================================
