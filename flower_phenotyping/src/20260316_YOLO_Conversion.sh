@@ -13,8 +13,8 @@ COCO="${WORK}/coco_out"
 SAHI="${WORK}/coco_sliced"
 YOLO="${WORK}/yolo_dataset"
 
-COCO_SCRIPT="/home/martinez/flower_phenotyping/src/20260316_per_image_jsons_to_coco.py"
-SAHI_SCRIPT="/home/martinez/flower_phenotyping/src/20260402_YOLO_SAHI_Training.py"
+COCO_SCRIPT="/home/martinez/internship_howest/AdvaBIT-Internship/flower_phenotyping/src/20260316_per_image_jsons_to_coco.py"
+SAHI_SCRIPT="/home/martinez/internship_howest/AdvaBIT-Internship/flower_phenotyping/src/20260402_YOLO_SAHI_Training.py"
 
 log() { echo "[$(date +%H:%M:%S)] $*"; }
 die() { echo "[ERROR] $*" >&2; exit 1; }
@@ -37,15 +37,6 @@ python "${COCO_SCRIPT}" \
     --val 0.1 \
     --seed 42
 
-# ─── CLEAN COCO ──────────────────────────────────────────────────────────────
-log "Cleaning COCO..."
-python /tmp/clean_coco.py \
-    "${COCO}/instances_train.json" \
-    "${COCO}/instances_train_clean.json"
-
-python /tmp/clean_coco.py \
-    "${COCO}/instances_val.json" \
-    "${COCO}/instances_val_clean.json"
 
 # ─── SAHI SLICING ────────────────────────────────────────────────────────────
 log "Running SAHI..."
@@ -217,7 +208,7 @@ python - << PY
 import json
 from pathlib import Path
 
-cats = json.load(open("${COCO}/instances_train_clean.json"))["categories"]
+cats = json.load(open("${COCO}/instances_train.json"))["categories"]
 
 # ❌ quitar planta
 cats = [c for c in cats if c["name"] != "planta"]
