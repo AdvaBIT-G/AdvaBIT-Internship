@@ -4,6 +4,7 @@ Slice COCO-format annotations and images using SAHI for YOLO training.
 """
  
 import argparse
+import json
 import logging
 import sys
 from pathlib import Path
@@ -26,6 +27,67 @@ def validate_paths(coco_file: str, image_dir: str) -> None:
         sys.exit(1)
  
  
+def preprocess_coco(coco_file_path: str) -> str:
+    """Return path to a COCO file where zero-area annotations are fixed or removed.
+
+    - If an annotation has area <= 0 but bbox width*height > 0, area is recomputed.
+    - If bbox area is also zero, the annotation is dropped.
+    The function writes a new file with suffix "_filtered.json" when changes are made,
+    otherwise returns the original path.
+    """
+    src = Path(coco_file_path)
+    try:
+        with src.open("r", encoding="utf-8") as f:
+            coco = json.load(f)
+    except Exception:
+        log.warning("Could not read COCO file for preprocessing: %s", coco_file_path)
+        return coco_file_path
+
+    annotations = coco.get("annotations", [])
+    new_annotations = []
+    changed = False
+
+    for ann in annotations:
+        area = ann.get("area")
+        bbox = ann.get("bbox", [0, 0, 0, 0])
+        try:
+            bw = float(bbox[2])
+            bh = float(bbox[3])
+        except Exception:
+            bw = bh = 0.0
+
+        # Ensure area is numeric
+        try:
+            area_val = float(area) if area is not None else 0.0
+        except Exception:
+            area_val = 0.0
+
+        if area_val <= 0.0:
+            computed = bw * bh
+            if computed > 0.0:
+                ann["area"] = computed
+            else:
+                # set a small positive area to avoid division by zero in downstream code
+                ann["area"] = 1.0
+            changed = True
+
+        new_annotations.append(ann)
+
+    if not changed:
+        return coco_file_path
+
+    coco["annotations"] = new_annotations
+    out_path = src.with_name(src.stem + "_filtered.json")
+    try:
+        with out_path.open("w", encoding="utf-8") as f:
+            json.dump(coco, f)
+        log.info("Wrote filtered COCO to %s", out_path)
+        return str(out_path)
+    except Exception:
+        log.warning("Failed to write filtered COCO, using original file")
+        return coco_file_path
+
+
 def run_slice(
     coco_file: str,
     image_dir: str,
@@ -43,6 +105,9 @@ def run_slice(
         log.error("SAHI is not installed. Run: pip install sahi")
         sys.exit(1)
  
+    # Preprocess COCO file to avoid zero-area annotations which cause
+    # a ZeroDivisionError inside SAHI's processing.
+    coco_file = preprocess_coco(coco_file)
     validate_paths(coco_file, image_dir)
     Path(output_dir).mkdir(parents=True, exist_ok=True)
  
@@ -87,8 +152,8 @@ def main() -> None:
     sahi_dir  = f"{BASE}/coco_sliced"
  
     splits = [
-        ("train", f"{coco_dir}/instances_train_clean.json", f"{sahi_dir}/train"),
-        ("val",   f"{coco_dir}/instances_val_clean.json",   f"{sahi_dir}/val"),
+        ("train", f"{coco_dir}/instances_train.json", f"{sahi_dir}/train"),
+        ("val",   f"{coco_dir}/instances_val.json",   f"{sahi_dir}/val"),
     ]
  
     for split_name, coco_file, out_dir in splits:
