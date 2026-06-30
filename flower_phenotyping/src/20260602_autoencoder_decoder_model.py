@@ -1,226 +1,262 @@
+
 import numpy as np
 import cv2
 import os
-from PIL import Image
-import tensorflow as tf
 import matplotlib.pyplot as plt
-from keras.layers import Conv2D, Conv2DTranspose, MaxPooling2D, MultiHeadAttention, Add
-from ultralytics import YOLO
-from keras.callbacks import ModelCheckpoint
-from sklearn.manifold import TSNE
 
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+from torch.utils.data import Dataset, DataLoader
+
+from ultralytics import YOLO
+from sklearn.manifold import TSNE
+from sklearn.decomposition import PCA
 
 # =========================
 # CONFIG
 # =========================
 
-RAW_DIR = "/home/martinez/internship_howest/AdvaBIT-Internship/flower_phenotyping/data/DINOv2/train"
-MASK_DIR = "/home/martinez/internship_howest/AdvaBIT-Internship/flower_phenotyping/data/DINOv2/masks"
+RAW_DIR = "/home/martinez/internship_howest/AdvaBIT-Internship/flower_phenotyping/data/selected_raw/train"
+MASK_DIR = "/home/martinez/internship_howest/AdvaBIT-Internship/flower_phenotyping/data/autoencoder/train_masks"
 
-# =====================================
-# FLOWER SEGMENTATION USING YOLO MODEL
-# =====================================
- 
-yolo_model = YOLO("/home/martinez/internship_howest/AdvaBIT-Internship/flower_phenotyping/models/yolo/weights/best.pt")
+os.makedirs(MASK_DIR, exist_ok=True)
+
+# =========================
+# 1. YOLO SEGMENTATION
+# =========================
+
+yolo_model = YOLO("/home/martinez/internship_howest/AdvaBIT-Internship/flower_phenotyping/models/yolo/best.pt")
 
 results = yolo_model.predict(
-    source= RAW_DIR,
+    source=RAW_DIR,
     imgsz=1024,
     conf=0.3,
-    device='cpu',
+    device=0,
     save=True,
-    stream=True  
+    stream=True
 )
 
-# folder for masks
-mask_dir = MASK_DIR
-os.makedirs(mask_dir, exist_ok=True)
-
 for r in results:
-    if r.orig_img is None:
-        print(f"Empty image: {r.path}")
-        continue
-    if r.masks is None:
-        print("No masks")
+    if r.orig_img is None or r.masks is None:
         continue
 
-    original_name = os.path.basename(r.path)
-    stem = os.path.splitext(original_name)[0]
+    stem = os.path.splitext(os.path.basename(r.path))[0]
 
     h, w = r.orig_shape
     combined_mask = np.zeros((h, w), dtype=np.uint8)
 
     for mask in r.masks.data:
         m = mask.cpu().numpy()
-        m = cv2.resize(m, (w, h), interpolation=cv2.INTER_NEAREST)
+        m = cv2.resize(m, (w, h))
         m = (m > 0.5).astype(np.uint8)
         combined_mask = np.maximum(combined_mask, m)
 
-   #Save segmented image (real color)
     img = r.orig_img.copy()
     segmented = cv2.bitwise_and(img, img, mask=combined_mask)
-    seg_path = os.path.join(MASK_DIR, f"{stem}.png")
-    cv2.imwrite(seg_path, segmented)
 
-print("✅ Segmented images saved")
+    cv2.imwrite(os.path.join(MASK_DIR, f"{stem}.png"), segmented)
 
+print("✅ YOLO segmentation done")
 
-# ===========
-# DATASET
-# ===========
-images = []
+# =========================
+# 2. DATASET
+# =========================
 
-for file in os.listdir(MASK_DIR):
-    path = os.path.join(MASK_DIR, file)
-    img = cv2.imread(path)
-    mask = np.sum(img, axis=2) > 20
-    ys, xs = np.where(mask)
+class FlowerDataset(Dataset):
+    def __init__(self, folder):
+        self.files = [os.path.join(folder, f) for f in os.listdir(folder)]
 
-    if len(xs) == 0 or len(ys) == 0:
-        continue
+    def __len__(self):
+        return len(self.files)
 
-    xmin, xmax = xs.min(), xs.max()
-    ymin, ymax = ys.min(), ys.max()
+    def __getitem__(self, idx):
+        path = self.files[idx]
+        img = cv2.imread(path)
 
-   
-    crop = img[ymin:ymax+1, xmin:xmax+1]
+        mask = np.sum(img, axis=2) > 20
+        ys, xs = np.where(mask)
 
+        if len(xs) == 0:
+            return self.__getitem__((idx + 1) % len(self.files))
 
-    crop = cv2.resize(crop, (224, 224))
+        xmin, xmax = xs.min(), xs.max()
+        ymin, ymax = ys.min(), ys.max()
 
-    crop = crop.astype(np.float32) / 255.0
+        crop = img[ymin:ymax+1, xmin:xmax+1]
+        crop = cv2.resize(crop, (224, 224))
+        crop = crop.astype(np.float32) / 255.0
 
-    images.append(crop)
+        crop = np.transpose(crop, (2, 0, 1))  # CHW
 
-images = np.array(images)
+        return torch.tensor(crop, dtype=torch.float32)
 
-x_train = images
-y_train = images
+dataset = FlowerDataset(MASK_DIR)
+dataloader = DataLoader(dataset, batch_size=2, shuffle=True)
 
-inputs = tf.keras.Input(shape=(224, 224, 3))
+# =========================
+# 3. AUTOENCODER MODEL
+# =========================
 
-# =====================
-# ENCODER
-# =====================
-x1 = Conv2D(256, 3, activation='relu', padding='same')(inputs)
-p1 = MaxPooling2D(2)(x1)
+class Autoencoder(nn.Module):
+    def __init__(self):
+        super().__init__()
 
-x2 = Conv2D(128, 3, activation='relu', padding='same')(p1)
-p2 = MaxPooling2D(2)(x2)
+        # Encoder
+        self.conv1 = nn.Conv2d(3, 256, 3, padding=1)
+        self.pool1 = nn.MaxPool2d(2)
 
-attn = MultiHeadAttention(
-    num_heads=4,
-    key_dim=32
-)(p2, p2)
+        self.conv2 = nn.Conv2d(256, 128, 3, padding=1)
+        self.pool2 = nn.MaxPool2d(2)
 
-x2_attn = Add()([p2, attn])
+        self.attn = nn.MultiheadAttention(embed_dim=128, num_heads=4, batch_first=True)
 
-x3 = Conv2D(64, 3, activation='relu', padding='same')(x2_attn)
-encoded = MaxPooling2D(2)(x3)
+        self.conv3 = nn.Conv2d(128, 64, 3, padding=1)
+        self.pool3 = nn.MaxPool2d(2)
 
-# ===================
-# BOTTLENECK
-# ===================
+        # Bottleneck
+        self.bottleneck = nn.Conv2d(64, 256, 3, padding=1)
 
-b = Conv2D(256, 3, activation='relu', padding='same')(encoded)
+        # Decoder
+        self.deconv1 = nn.ConvTranspose2d(256, 64, 2, stride=2)
+        self.deconv2 = nn.ConvTranspose2d(64, 128, 2, stride=2)
+        self.deconv3 = nn.ConvTranspose2d(128, 256, 2, stride=2)
 
-# =====================
-# DECODER
-# =====================
-x = Conv2DTranspose(64, 3, strides=2, activation='relu', padding='same')(b)
-x = Conv2DTranspose(128, 3, strides=2, activation='relu', padding='same')(x)
-x = Conv2DTranspose(256, 3, strides=2, activation='relu', padding='same')(x)
+        self.out = nn.Conv2d(256, 3, 3, padding=1)
 
-outputs = Conv2D(3, 3, activation='sigmoid', padding='same')(x)
+    def forward(self, x):
+        # Encoder
+        x = F.relu(self.conv1(x))
+        x = self.pool1(x)
 
-autoencoder = tf.keras.Model(inputs, outputs)
+        x = F.relu(self.conv2(x))
+        x = self.pool2(x)
 
-# ================
-# COMPILE
-# ================
-autoencoder.compile(
-    optimizer=tf.keras.optimizers.Adam(learning_rate=1e-4),
-    loss='mae'
-)
+        # Attention
+        b, c, h, w = x.shape
+        x_flat = x.view(b, c, h * w).permute(0, 2, 1)
 
-# =====================
-# Save every 10 epochs
-# =====================
+        attn_out, _ = self.attn(x_flat, x_flat, x_flat)
 
+        x = attn_out.permute(0, 2, 1).view(b, c, h, w)
 
-checkpoint = ModelCheckpoint(
-    filepath='/home/martinez/internship_howest/AdvaBIT-Internship/flower_phenotyping/models/autoencoder/checkpoints/model_epoch_{epoch:03d}.keras',
-    save_freq='epoch',
-    save_weights_only=False
-)
+        x = F.relu(self.conv3(x))
+        x = self.pool3(x)
 
-class SaveEvery10Epochs(tf.keras.callbacks.Callback):
-    def on_epoch_end(self, epoch, logs=None):
-        if (epoch + 1) % 10 == 0:
-            self.model.save(
-                f'/home/martinez/internship_howest/AdvaBIT-Internship/flower_phenotyping/models/autoencoder/checkpoints/model_epoch_{epoch+1:03d}.keras'
-            )
+        encoded = x  # latent space
 
+        # Bottleneck
+        x = F.relu(self.bottleneck(x))
 
-# =============
-# TRAIN
-# =============
+        # Decoder
+        x = F.relu(self.deconv1(x))
+        x = F.relu(self.deconv2(x))
+        x = torch.sigmoid(self.deconv3(x))
 
+        x = torch.sigmoid(self.out(x))
 
-autoencoder.fit(
-    x_train,
-    y_train,
-    epochs=200,
-    batch_size=2,
-    validation_split=0.1,
-    callbacks=[SaveEvery10Epochs()]
-)
+        return x, encoded
 
+# =========================
+# 4. TRAINING SETUP
+# =========================
 
-pred = autoencoder.predict(x_train[:50])
-pred = np.clip(pred, 0.0, 1.0)
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-for i in range(50):
-    plt.figure(figsize=(4,2))
+model = Autoencoder().to(device)
+optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
+loss_fn = nn.L1Loss()
 
-    # original
-    plt.subplot(1,2,1)
-    plt.imshow(x_train[i])
+# =========================
+# 5. TRAINING LOOP
+# =========================
+
+epochs = 200
+
+for epoch in range(epochs):
+    model.train()
+    total_loss = 0
+
+    for batch in dataloader:
+        batch = batch.to(device)
+
+        optimizer.zero_grad()
+
+        recon, _ = model(batch)
+
+        loss = loss_fn(recon, batch)
+
+        loss.backward()
+        optimizer.step()
+
+        total_loss += loss.item()
+    avg_loss = total_loss / len(dataloader)
+
+    print(f"Epoch {epoch+1}/{epochs} - Loss: {total_loss:.4f}")
+
+    # Save checkpoint
+    torch.save({
+        "epoch": epoch + 1,
+        "model_state_dict": model.state_dict(),
+        "optimizer_state_dict": optimizer.state_dict(),
+        "loss": avg_loss,
+    }, f"/home/martinez/internship_howest/AdvaBIT-Internship/flower_phenotyping/models/checkpoint_epoch_{epoch+1}.pth")
+
+# ================================
+# 6. RECONSTRUCTION VISUALIZATION
+# ================================
+
+model.eval()
+
+batch = next(iter(dataloader)).to(device)
+recon, _ = model(batch)
+
+batch = batch.cpu().numpy()
+recon = recon.detach().cpu().numpy()
+
+for i in range(min(10, len(batch))):
+    plt.figure(figsize=(4, 2))
+
+    plt.subplot(1, 2, 1)
+    plt.imshow(np.transpose(batch[i], (1, 2, 0)))
     plt.title("Original")
 
-    # reconstructed
-    plt.subplot(1,2,2)
-    plt.imshow(pred[i])
+    plt.subplot(1, 2, 2)
+    plt.imshow(np.transpose(recon[i], (1, 2, 0)))
     plt.title("Reconstructed")
-    plt.savefig(f'/home/martinez/internship_howest/AdvaBIT-Internship/flower_phenotyping/results/figures/20260603_autoencoder_reconstruction_{i}.png', bbox_inches='tight')
+
     plt.show()
-    plt.close()
 
+# =========================
+# 7. FEATURE EXTRACTION
+# =========================
 
-autoencoder.summary()
+features = []
 
-# ===================
-# FEATURE EXTRACTION
-# ===================
-#Using the last layer before bottleneck
-encoded = MaxPooling2D(2)(x3)
+model.eval()
 
-encoder = tf.keras.Model(
-    inputs=autoencoder.input,
-    outputs=encoded
-)
+with torch.no_grad():
+    for batch in dataloader:
+        batch = batch.to(device)
 
-features_train = encoder.predict(x_train)
+        _, encoded = model(batch)
 
-# ====================
-# t-SNE visualization
-# ====================
+        features.append(encoded.cpu().numpy())
+
+features = np.concatenate(features, axis=0)
+features = features.reshape(features.shape[0], -1)
+
+# =========================
+# 8. PCA + t-SNE
+# =========================
+
+features = PCA(n_components=50).fit_transform(features)
 
 tsne = TSNE(n_components=2, perplexity=30, random_state=42)
-features_2d = tsne.fit_transform(features_train)
+features_2d = tsne.fit_transform(features)
 
-plt.figure(figsize=(8,6))
-plt.scatter(features_2d[:,0], features_2d[:,1], s=5)
+plt.figure(figsize=(8, 6))
+plt.scatter(features_2d[:, 0], features_2d[:, 1], s=5)
 plt.title("Latent space t-SNE")
 plt.show()
-plt.savefig("/home/martinez/internship_howest/AdvaBIT-Internship/flower_phenotyping/results/figures/20260618_t-SNE_latent_space.png", dpi=300, bbox_inches="tight")
+
