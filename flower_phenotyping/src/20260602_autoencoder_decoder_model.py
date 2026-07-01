@@ -214,18 +214,25 @@ recon, _ = model(batch)
 batch = batch.cpu().numpy()
 recon = recon.detach().cpu().numpy()
 
-for i in range(min(10, len(batch))):
+n = min(10, len(batch))
+plt.figure(figsize=(10, 2 * n))
+
+for i in range(n):
     plt.figure(figsize=(4, 2))
 
-    plt.subplot(1, 2, 1)
+    plt.subplot(n, 2, 2*i + 1)
     plt.imshow(np.transpose(batch[i], (1, 2, 0)))
     plt.title("Original")
+    plt.axis("off")
 
-    plt.subplot(1, 2, 2)
+    plt.subplot(n, 2, 2*i + 2)
     plt.imshow(np.transpose(recon[i], (1, 2, 0)))
     plt.title("Reconstructed")
-
-    plt.show()
+    plt.axis("off")
+    
+plt.tight_layout()
+plt.savefig("/home/martinez/internship_howest/AdvaBIT-Internship/flower_phenotyping/results/figures/20260701_reconstructed_images.png", dpi=300, bbox_inches="tight")
+plt.show()
 
 # =========================
 # 7. FEATURE EXTRACTION
@@ -251,6 +258,13 @@ features = features.reshape(features.shape[0], -1)
 # =========================
 
 features = PCA(n_components=50).fit_transform(features)
+plt.figure(figsize=(8, 6))
+plt.scatter(features[:, 0], features[:, 1], s=10)
+plt.xlabel("PC1")
+plt.ylabel("PC2")
+plt.title("PCA")
+plt.savefig("/home/martinez/internship_howest/AdvaBIT-Internship/flower_phenotyping/results/figures/20260701_latent_space_pca.png", dpi=300, bbox_inches="tight")
+plt.show()
 
 tsne = TSNE(n_components=2, perplexity=30, random_state=42)
 features_2d = tsne.fit_transform(features)
@@ -258,5 +272,7 @@ features_2d = tsne.fit_transform(features)
 plt.figure(figsize=(8, 6))
 plt.scatter(features_2d[:, 0], features_2d[:, 1], s=5)
 plt.title("Latent space t-SNE")
+plt.savefig("/home/martinez/internship_howest/AdvaBIT-Internship/flower_phenotyping/results/figures/20260701_latent_space_tsne.png", dpi=300, bbox_inches="tight")
+
 plt.show()
 
