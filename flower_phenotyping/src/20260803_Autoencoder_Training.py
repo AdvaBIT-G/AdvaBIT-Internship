@@ -18,7 +18,7 @@ from autoencoder_arch import FlowerDataset, Autoencoder
 
 # Input data and output paths
 MASK_DIR = "/home/gmartinez/internship_howest/AdvaBIT-Internship/flower_phenotyping/data/autoencoder/train_masks"
-CHECKPOINT_DIR = "/home/gmartinez/internship_howest/AdvaBIT-Internship/flower_phenotyping/models"
+CHECKPOINT_DIR = "/home/gmartinez/internship_howest/AdvaBIT-Internship/flower_phenotyping/models/autoencoder"
 FINAL_MODEL_PATH = os.path.join(CHECKPOINT_DIR, "autoencoder_final.pth")
 
 # Training parameters
