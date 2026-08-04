@@ -132,7 +132,7 @@ class Autoencoder(nn.Module):
         # Decoder
         x = F.relu(self.deconv1(x))
         x = F.relu(self.deconv2(x))
-        x = torch.sigmoid(self.deconv3(x))
+        x = F.relu(self.deconv3(x))
 
         x = torch.sigmoid(self.out(x))
 
