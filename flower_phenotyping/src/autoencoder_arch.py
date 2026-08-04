@@ -111,6 +111,10 @@ class Autoencoder(nn.Module):
         x = F.relu(self.conv2(x))
         x = self.pool2(x)
 
+
+        x = F.relu(self.conv3(x))
+        x = self.pool3(x)
+
         # Apply attention on flattened spatial features
         b, c, h, w = x.shape
         x_flat = x.view(b, c, h * w).permute(0, 2, 1)
@@ -119,9 +123,6 @@ class Autoencoder(nn.Module):
 
         # Restore image dimensions
         x = attn_out.permute(0, 2, 1).view(b, c, h, w)
-
-        x = F.relu(self.conv3(x))
-        x = self.pool3(x)
 
         # Bottleneck
         x = F.relu(self.bottleneck(x))
