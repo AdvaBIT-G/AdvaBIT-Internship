@@ -29,13 +29,13 @@ from autoencoder_arch import FlowerDataset, Autoencoder
 # Input data and trained model
 MASK_DIR = "/home/gmartinez/internship_howest/AdvaBIT-Internship/flower_phenotyping/data/autoencoder/train_masks"
 
-CHECKPOINT_PATH = "/home/gmartinez/internship_howest/AdvaBIT-Internship/flower_phenotyping/models/autoencoder_final.pth"
+CHECKPOINT_PATH = "/home/gmartinez/internship_howest/AdvaBIT-Internship/flower_phenotyping/models/autoencoder/autoencoder_final.pth"
 
 # Output paths
 FIGURES_DIR = "/home/gmartinez/internship_howest/AdvaBIT-Internship/flower_phenotyping/results/figures"
 FEATURES_PATH = "/home/gmartinez/internship_howest/AdvaBIT-Internship/flower_phenotyping/results/latent_features.npy"
 
-RUN_TAG = "20260701"  # to save the different figures with a unique name
+RUN_TAG = "20260804"  # to save the different figures with a unique name
 BATCH_SIZE = 16
 TSNE_PERPLEXITY = 30
 
