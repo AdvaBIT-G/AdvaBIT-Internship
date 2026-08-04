@@ -81,27 +81,27 @@ class Autoencoder(nn.Module):
         super().__init__()
 
         # Encoder
-        self.conv1 = nn.Conv2d(3, 256, 3, padding=1)
+        self.conv1 = nn.Conv2d(3, 32, 3, padding=1)
         self.pool1 = nn.MaxPool2d(2)
 
-        self.conv2 = nn.Conv2d(256, 128, 3, padding=1)
+        self.conv2 = nn.Conv2d(32, 64, 3, padding=1)
         self.pool2 = nn.MaxPool2d(2)
+
+        self.conv3 = nn.Conv2d(64, 128, 3, padding=1)
+        self.pool3 = nn.MaxPool2d(2)
 
         # Attention layer to capture spatial dependencies
         self.attn = nn.MultiheadAttention(embed_dim=128, num_heads=4, batch_first=True)
 
-        self.conv3 = nn.Conv2d(128, 64, 3, padding=1)
-        self.pool3 = nn.MaxPool2d(2)
-
         # Bottleneck (latent representation)
-        self.bottleneck = nn.Conv2d(64, 256, 3, padding=1)
+        self.bottleneck = nn.Conv2d(128, 64, 3, padding=1)
 
         # Decoder
-        self.deconv1 = nn.ConvTranspose2d(256, 64, 2, stride=2)
-        self.deconv2 = nn.ConvTranspose2d(64, 128, 2, stride=2)
-        self.deconv3 = nn.ConvTranspose2d(128, 256, 2, stride=2)
+        self.deconv1 = nn.ConvTranspose2d(64, 128, 2, stride=2)
+        self.deconv2 = nn.ConvTranspose2d(128, 64, 2, stride=2)
+        self.deconv3 = nn.ConvTranspose2d(64, 32, 2, stride=2)
 
-        self.out = nn.Conv2d(256, 3, 3, padding=1)
+        self.out = nn.Conv2d(32, 3, 3, padding=1)
 
     def forward(self, x):
         # Encoder
@@ -123,11 +123,11 @@ class Autoencoder(nn.Module):
         x = F.relu(self.conv3(x))
         x = self.pool3(x)
 
-        # Store latent representation before decoding
-        encoded = x 
-
         # Bottleneck
         x = F.relu(self.bottleneck(x))
+
+        # Store latent representation before decoding
+        encoded = x 
 
         # Decoder
         x = F.relu(self.deconv1(x))
