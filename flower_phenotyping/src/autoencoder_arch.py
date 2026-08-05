@@ -37,7 +37,7 @@ class FlowerDataset(Dataset):
 
         # Convert image from OpenCV BGR format to RGB
         img = cv2.imread(path)
-        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
 
         # Generate a simple mask to separate flower from background
         mask = np.sum(img, axis=2) > 20
@@ -53,9 +53,14 @@ class FlowerDataset(Dataset):
 
         crop = img[ymin:ymax + 1, xmin:xmax + 1]
 
-        # Resize and normalize image
+        # Resize image
         crop = cv2.resize(crop, (224, 224))
-        crop = crop.astype(np.float32) / 255.0
+        crop = crop.astype(np.float32)
+
+        # Normalize HSV channels separately
+        crop[:, :, 0] = crop[:, :, 0] / 179.0  # Hue
+        crop[:, :, 1] = crop[:, :, 1] / 255.0  # Saturation
+        crop[:, :, 2] = crop[:, :, 2] / 255.0  # Value
 
         # Convert from HWC (OpenCV) to CHW (PyTorch)
         crop = np.transpose(crop, (2, 0, 1))
@@ -81,27 +86,27 @@ class Autoencoder(nn.Module):
         super().__init__()
 
         # Encoder
-        self.conv1 = nn.Conv2d(3, 32, 3, padding=1)
+        self.conv1 = nn.Conv2d(3, 64, 3, padding=1)
         self.pool1 = nn.MaxPool2d(2)
 
-        self.conv2 = nn.Conv2d(32, 64, 3, padding=1)
+        self.conv2 = nn.Conv2d(64, 128, 3, padding=1)
         self.pool2 = nn.MaxPool2d(2)
 
-        self.conv3 = nn.Conv2d(64, 128, 3, padding=1)
+        self.conv3 = nn.Conv2d(128, 256, 3, padding=1)
         self.pool3 = nn.MaxPool2d(2)
 
         # Attention layer to capture spatial dependencies
-        self.attn = nn.MultiheadAttention(embed_dim=128, num_heads=4, batch_first=True)
+        self.attn = nn.MultiheadAttention(embed_dim=256, num_heads=8, batch_first=True)
 
         # Bottleneck (latent representation)
-        self.bottleneck = nn.Conv2d(128, 64, 3, padding=1)
+        self.bottleneck = nn.Conv2d(256, 128, 3, padding=1)
 
         # Decoder
-        self.deconv1 = nn.ConvTranspose2d(64, 128, 2, stride=2)
-        self.deconv2 = nn.ConvTranspose2d(128, 64, 2, stride=2)
-        self.deconv3 = nn.ConvTranspose2d(64, 32, 2, stride=2)
+        self.deconv1 = nn.ConvTranspose2d(128, 256, 2, stride=2)
+        self.deconv2 = nn.ConvTranspose2d(256, 128, 2, stride=2)
+        self.deconv3 = nn.ConvTranspose2d(128, 64, 2, stride=2)
 
-        self.out = nn.Conv2d(32, 3, 3, padding=1)
+        self.out = nn.Conv2d(64, 3, 3, padding=1)
 
     def forward(self, x):
         # Encoder
