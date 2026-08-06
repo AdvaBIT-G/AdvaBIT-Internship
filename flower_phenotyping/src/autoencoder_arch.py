@@ -37,7 +37,7 @@ class FlowerDataset(Dataset):
 
         # Convert image from OpenCV BGR format to RGB
         img = cv2.imread(path)
-        img = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
         # Generate a simple mask to separate flower from background
         mask = np.sum(img, axis=2) > 20
@@ -53,14 +53,9 @@ class FlowerDataset(Dataset):
 
         crop = img[ymin:ymax + 1, xmin:xmax + 1]
 
-        # Resize image
+        # Resize and normalize image
         crop = cv2.resize(crop, (224, 224))
-        crop = crop.astype(np.float32)
-
-        # Normalize HSV channels separately
-        crop[:, :, 0] = crop[:, :, 0] / 179.0  # Hue
-        crop[:, :, 1] = crop[:, :, 1] / 255.0  # Saturation
-        crop[:, :, 2] = crop[:, :, 2] / 255.0  # Value
+        crop = crop.astype(np.float32) / 255.0
 
         # Convert from HWC (OpenCV) to CHW (PyTorch)
         crop = np.transpose(crop, (2, 0, 1))
@@ -125,9 +120,9 @@ class Autoencoder(nn.Module):
         x_flat = x.view(b, c, h * w).permute(0, 2, 1)
 
         attn_out, _ = self.attn(x_flat, x_flat, x_flat)
-
-        # Restore image dimensions
-        x = attn_out.permute(0, 2, 1).view(b, c, h, w)
+        x_flat = x_flat + attn_out 
+        # Restore image dimensions        
+        x = x_flat.permute(0, 2, 1).view(b, c, h, w)
 
         # Bottleneck
         x = F.relu(self.bottleneck(x))
