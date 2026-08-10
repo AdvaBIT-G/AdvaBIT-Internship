@@ -14,6 +14,9 @@ from sklearn.metrics import silhouette_score
 
 from autoencoder_arch import FlowerDataset, Autoencoder
 
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import cross_val_score
+
 # =========================
 # CONFIG
 # =========================
@@ -29,9 +32,9 @@ FEATURES_PATH = "/home/gmartinez/AdvaBIT-Internship/flower_phenotyping/results/l
 FILENAMES_PATH = "/home/gmartinez/AdvaBIT-Internship/flower_phenotyping/results/latent_filenames.npy"
 
 # Labelled dataset
-LABELS_CSV_PATH = None
+LABELS_CSV_PATH = "/home/gmartinez/AdvaBIT-Internship/flower_phenotyping/data/annotations/color_annotations/Labels.csv"
 
-RUN_TAG = "20260807_1"  # to save the different figures with a unique name
+RUN_TAG = "20260810_3"  # to save the different figures with a unique name
 BATCH_SIZE = 16
 TSNE_PERPLEXITY = 10
 
@@ -119,7 +122,7 @@ def load_external_labels(filenames, csv_path=LABELS_CSV_PATH):
     if csv_path is None:
         return None
 
-    df = pd.read_csv(csv_path)
+    df = pd.read_csv(csv_path, sep=";")
     if "filename" not in df.columns or "label" not in df.columns:
         raise ValueError("LABELS_CSV_PATH must have 'filename' and 'label' columns")
 
@@ -257,18 +260,26 @@ def main():
     visualize_reconstructions(model, dataloader, device)
 
     # Extract latent features
-    features = extract_features(model, dataloader, device)
+    features, filenames = extract_features(model, dataloader, device)
+
+    # Load external labels for color groups aligned with filenames
+    external_labels = load_external_labels(filenames)
 
     # Clustering quality: silhouette score for k=2..6, computed on the raw latent space
     scores, labels_by_k, best_k = compute_silhouette_scores(features)
     best_labels = labels_by_k[best_k]  # cluster assignment for the best k, used to color the plots below
 
     # PCA: scatter plot (colored by cluster) + explained variance plot
-    reduced, pca = plot_pca(features, labels=best_labels)
+    reduced, pca = plot_pca(features, labels=external_labels)
     plot_pca_variance(pca)
 
     # t-SNE (on PCA-reduced features, colored by cluster)
-    plot_tsne(reduced, labels=best_labels)
+    plot_tsne(reduced, labels=external_labels)
+
+    #Logistic Regression over raw features
+    clf = LogisticRegression(max_iter=1000)
+    acc = cross_val_score(clf, features, external_labels, cv=5)
+    print(acc.mean())
 
 
 if __name__ == "__main__":
