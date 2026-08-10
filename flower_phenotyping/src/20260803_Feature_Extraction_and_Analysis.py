@@ -16,6 +16,7 @@ from autoencoder_arch import FlowerDataset, Autoencoder
 
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import cross_val_score
+from sklearn.preprocessing import StandardScaler
 
 # =========================
 # CONFIG
@@ -34,7 +35,7 @@ FILENAMES_PATH = "/home/gmartinez/AdvaBIT-Internship/flower_phenotyping/results/
 # Labelled dataset
 LABELS_CSV_PATH = "/home/gmartinez/AdvaBIT-Internship/flower_phenotyping/data/annotations/color_annotations/Labels.csv"
 
-RUN_TAG = "20260810_3"  # to save the different figures with a unique name
+RUN_TAG = "20260810_4"  # to save the different figures with a unique name
 BATCH_SIZE = 16
 TSNE_PERPLEXITY = 10
 
@@ -262,23 +263,31 @@ def main():
     # Extract latent features
     features, filenames = extract_features(model, dataloader, device)
 
+    # Scale
+    scaler = StandardScaler()
+    features_scaled = scaler.fit_transform(features)
+
     # Load external labels for color groups aligned with filenames
     external_labels = load_external_labels(filenames)
 
     # Clustering quality: silhouette score for k=2..6, computed on the raw latent space
-    scores, labels_by_k, best_k = compute_silhouette_scores(features)
+    scores, labels_by_k, best_k = compute_silhouette_scores(features_scaled)
     best_labels = labels_by_k[best_k]  # cluster assignment for the best k, used to color the plots below
 
     # PCA: scatter plot (colored by cluster) + explained variance plot
-    reduced, pca = plot_pca(features, labels=external_labels)
+    reduced, pca = plot_pca(features_scaled, labels=external_labels)
     plot_pca_variance(pca)
 
     # t-SNE (on PCA-reduced features, colored by cluster)
     plot_tsne(reduced, labels=external_labels)
 
     #Logistic Regression over raw features
-    clf = LogisticRegression(max_iter=1000)
-    acc = cross_val_score(clf, features, external_labels, cv=5)
+
+    scaler = StandardScaler()
+    features_scaled = scaler.fit_transform(features)
+
+    clf = LogisticRegression(max_iter=5000)
+    acc = cross_val_score(clf, features_scaled, external_labels, cv=5)
     print(acc.mean())
 
 
