@@ -23,7 +23,8 @@ class FlowerDataset(Dataset):
     Custom Dataset for loading and preprocessing flower images.
     
     Images are cropped to remove background, resized to 224x224,
-    normalized, and converted into PyTorch tensors.
+    normalized, and converted into PyTorch tensors. Each sample also
+    returns the filename so features can be matched back to their image
     """
     def __init__(self, folder):
         # Store image paths for later loading
@@ -60,7 +61,9 @@ class FlowerDataset(Dataset):
         # Convert from HWC (OpenCV) to CHW (PyTorch)
         crop = np.transpose(crop, (2, 0, 1))
 
-        return torch.tensor(crop, dtype=torch.float32)
+        filename = os.path.basename(path)
+
+        return torch.tensor(crop, dtype=torch.float32), filename
 
 
 # =========================
