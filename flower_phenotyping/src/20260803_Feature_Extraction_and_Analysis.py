@@ -17,6 +17,7 @@ from autoencoder_arch import FlowerDataset, Autoencoder
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import cross_val_score
 from sklearn.preprocessing import StandardScaler
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 
 # =========================
 # CONFIG
@@ -35,7 +36,7 @@ FILENAMES_PATH = "/home/gmartinez/AdvaBIT-Internship/flower_phenotyping/results/
 # Labelled dataset
 LABELS_CSV_PATH = "/home/gmartinez/AdvaBIT-Internship/flower_phenotyping/data/annotations/color_annotations/Labels.csv"
 
-RUN_TAG = "20260810_4"  # to save the different figures with a unique name
+RUN_TAG = "20260810_5"  # to save the different figures with a unique name
 BATCH_SIZE = 16
 TSNE_PERPLEXITY = 10
 
@@ -246,6 +247,33 @@ def compute_silhouette_scores(features, k_values=SIL_K_VALUES):
 
     return scores, labels_by_k, best_k
 
+def plot_lda(features, labels):
+    """Visualize label separability using LDA (supervised)."""
+    scaler = StandardScaler()
+    features_scaled = scaler.fit_transform(features)
+
+    n_classes = len(np.unique(labels))
+    n_components = min(n_classes - 1, features_scaled.shape[1])
+
+    lda = LinearDiscriminantAnalysis(n_components=n_components)
+    reduced = lda.fit_transform(features_scaled, labels)
+
+    plt.figure(figsize=(8, 6))
+    codes, categories = pd.factorize(labels)
+    scatter = plt.scatter(reduced[:, 0], reduced[:, 1] if n_components > 1 else np.zeros_like(reduced[:, 0]),
+                           c=codes, cmap="tab10", s=25)
+    handles, _ = scatter.legend_elements()
+    plt.legend(handles, categories, title="Label")
+    plt.xlabel("LD1")
+    plt.ylabel("LD2" if n_components > 1 else "")
+    plt.title("LDA (supervised) — latent space by color label")
+    out_path = os.path.join(FIGURES_DIR, f"{RUN_TAG}_latent_space_lda.png")
+    plt.savefig(out_path, dpi=300, bbox_inches="tight")
+    plt.show()
+    print(f"Saved: {out_path}")
+
+    return reduced, lda
+
 
 def main():
     # Select GPU if available
@@ -269,6 +297,9 @@ def main():
 
     # Load external labels for color groups aligned with filenames
     external_labels = load_external_labels(filenames)
+
+    if external_labels is not None:
+     plot_lda(features, external_labels)
 
     # Clustering quality: silhouette score for k=2..6, computed on the raw latent space
     scores, labels_by_k, best_k = compute_silhouette_scores(features_scaled)
