@@ -11,6 +11,9 @@ from ultralytics import YOLO
 
 from autoencoder_arch import Autoencoder
 
+import mysql.connector
+from dotenv import load_dotenv
+
 ###############################
 # CONFIG
 ###############################
@@ -23,6 +26,15 @@ CLASSIFIER_PATH = '/home/gmartinez/AdvaBIT-Internship/flower_phenotyping/models/
 SVM_PATH = '/home/gmartinez/AdvaBIT-Internship/flower_phenotyping/models/color/flower_color_model_svm.joblib'
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+load_dotenv()
+
+DB_CONFIG = {
+    "host": os.getenv("DB_HOST"),
+    "user": os.getenv("DB_USER"),
+    "password": os.getenv("DB_PASSWORD"),
+    "database": os.getenv("DB_NAME"),
+}
 
 FEATURE_ORDER = [
     'green', 'yellow', 'orange', 'white', 'red', 'unknown', 'purple', 'median_h',
@@ -178,13 +190,43 @@ def predict_logistic_regression(autoencoder, logistic_regression, segmented_img)
     return pred, probability
 
 #########################
+# DATABASE
+#########################
+def get_db_connection():
+    return mysql.connector.connect(**DB_CONFIG)
+
+def insert_image(conn, image_path):
+    cursor = conn.cursor()
+    cursor.execute(
+        'INSERT INTO images (image_path, processed_at) VALUES (%s, %s)',
+        (image_path, datetime.now()),
+    )
+    conn.commit()
+    image_id = cursor.lastrowid
+    cursor.close()
+    return image_id
+
+def insert_prediction(conn, image_id, model_name, predicted_class, probability):
+    cursor = conn.cursor()
+    cursor.execute(
+        '''INSERT INTO predictions (image_id, model_name, predicted_class, probability, created_at)
+           VALUES (%s, %s, %s, %s, %s)''',
+           (image_id, model_name, str(predicted_class), probability, datetime.now()),
+    )
+    conn.commit()
+    cursor.close()
+
+#########################
 # PIPELINE
 #########################
 
-def process_image(image_path, yolo_model, autoencoder, logistic_regression, svm_model):
+def process_image(image_path, yolo_model, autoencoder, logistic_regression, svm_model, conn):
     combined_mask, segmented_img = segmented_img(yolo_model, image_path)
     if combined_mask is None:
         print(f'[WARNING] No flower detected on {image_path}')
+
+    image_id = insert_image(conn, image_path)
+    original_img = cv2.imread(image_path)
 
     #SVM model
 
@@ -192,9 +234,12 @@ def process_image(image_path, yolo_model, autoencoder, logistic_regression, svm_
     hsv_features = extract_hsv_features(original_img, combined_mask)
     if hsv_features is not None:
         svm_class, svm_prob = predict_svm(svm_model, hsv_features)
+        insert_prediction(conn, image_id, 'svm', svm_class, svm_prob)
 
     #Autoencoder + logistic regression model
     lr_class, lr_prob = predict_logistic_regression(autoencoder, logistic_regression, segmented_img)
+    if lr_class is not None:
+        insert_prediction(conn, image_id, 'logistic_regression', lr_class, lr_prob)
 
     print(f'[{image_path}] SVM -> {svm_class} ({svm_prob}) | LR -> {lr_class} ({lr_prob})')
 
@@ -202,6 +247,8 @@ def main():
     yolo_model = load_yolo()
     autoencoder, logistic_regression = load_autoencoder_and_logistic_regression()
     svm_model = load_svm()
+    conn = get_db_connection()
+
 
     image_files = [
         os.path.join(RAW_DIR, f)
@@ -209,7 +256,10 @@ def main():
         if f.lower().endwith(('.jpg', '.jpeg', '.png'))
     ]
     for image_path in image_files:
-        process_image(image_path, yolo_model, autoencoder, logistic_regression, svm_model)
+        process_image(image_path, yolo_model, autoencoder, logistic_regression, svm_model, conn)
+
+
+    conn.close()
 
 if __name__ == '__main__':
     main()  
