@@ -9,6 +9,8 @@ import torch.nn.functional as F
 import joblib
 from ultralytics import YOLO
 
+from autoencoder_arch import Autoencoder
+
 ###############################
 # CONFIG
 ###############################
