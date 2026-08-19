@@ -24,10 +24,11 @@ YOLO_WEIGHTS = '/home/gmartinez/AdvaBIT-Internship/flower_phenotyping/models/yol
 AUTOENCODER_PATH = '/home/gmartinez/AdvaBIT-Internship/flower_phenotyping/models/autoencoder/autoencoder_final.pth'
 CLASSIFIER_PATH = '/home/gmartinez/AdvaBIT-Internship/flower_phenotyping/models/color_classifier/color_classifier.joblib'
 SVM_PATH = '/home/gmartinez/AdvaBIT-Internship/flower_phenotyping/models/color/flower_color_model_svm.joblib'
+ENV_PATH = '/home/gmartinez/AdvaBIT-Internship/flower_phenotyping/database/.env'
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-load_dotenv()
+load_dotenv(ENV_PATH)
 
 DB_CONFIG = {
     "host": os.getenv("DB_HOST"),
@@ -37,8 +38,7 @@ DB_CONFIG = {
 }
 
 FEATURE_ORDER = [
-    'green', 'yellow', 'orange', 'white', 'red', 'unknown', 'purple', 'median_h',
-    'median_s', 'median_v', 'std_h', 'std_s', 'std_v'
+    'green', 'yellow', 'orange', 'white', 'red', 'unknown', 'purple'
 ]
 
 #############################
@@ -130,17 +130,7 @@ def extract_hsv_features(image, combined_mask):
 
     percentages = {c: 100 * counts.get(c, 0) / total for c in FEATURE_ORDER[:7]}
 
-    h_values = pixels[:, 0]
-    s_values = pixels[:, 1]
-    v_values = pixels[:, 2]
-
-    stats = {
-        "median_h": np.median(h_values), "median_s": np.median(s_values), "median_v": np.median(v_values),
-        "std_h": np.std(h_values), "std_s": np.std(s_values), "std_v": np.std(v_values),
-    }
-
-    all_features = {**percentages, **stats}
-    return [all_features.get(k, 0) for k in FEATURE_ORDER]
+    return [percentages.get(k, 0) for k in FEATURE_ORDER]
 
 def predict_svm(svm_model, features):
     X = np.array(features).reshape(1, -1)
@@ -221,9 +211,10 @@ def insert_prediction(conn, image_id, model_name, predicted_class, probability):
 #########################
 
 def process_image(image_path, yolo_model, autoencoder, logistic_regression, svm_model, conn):
-    combined_mask, segmented_img = segmented_img(yolo_model, image_path)
+    combined_mask, segmented_img = segment_image(yolo_model, image_path)
     if combined_mask is None:
         print(f'[WARNING] No flower detected on {image_path}')
+        return
 
     image_id = insert_image(conn, image_path)
     original_img = cv2.imread(image_path)
@@ -253,7 +244,7 @@ def main():
     image_files = [
         os.path.join(RAW_DIR, f)
         for f in os.listdir(RAW_DIR)
-        if f.lower().endwith(('.jpg', '.jpeg', '.png'))
+        if f.lower().endswith(('.jpg', '.jpeg', '.png'))
     ]
     for image_path in image_files:
         process_image(image_path, yolo_model, autoencoder, logistic_regression, svm_model, conn)
