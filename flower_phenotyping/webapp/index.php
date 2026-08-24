@@ -44,14 +44,29 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_FILES["image"])) {
  
             $output = shell_exec($command . " 2>&1");
 
-            $data = json_decode($output, true);
- 
-            if ($data === null) {
-                $error = "Could not read the prediction result.";
-            } elseif (!empty($data["error"])) {
-                $error = $data["error"];
+            // Find the JSON object in the Python output
+            $json_start = strpos($output, "{");
+            $json_end = strrpos($output, "}");
+
+            if ($json_start === false || $json_end === false) {
+
+                $error = "Could not find prediction JSON in Python output.";
+
             } else {
-                
+
+                $json_output = substr(
+                    $output,
+                    $json_start,
+                    $json_end - $json_start + 1
+                );
+
+                $data = json_decode($json_output, true);
+
+                if ($data === null) {
+                    $error = "Could not read the prediction JSON.";
+                } elseif (!empty($data["error"])) {
+                    $error = $data["error"];
+                } else {
  
                 // --- Save the result in a database ---
                 $connection = connectDB();
