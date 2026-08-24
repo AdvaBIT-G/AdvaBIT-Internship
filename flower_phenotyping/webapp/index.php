@@ -114,3 +114,45 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_FILES["image"])) {
 }
 }
 ?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>FLOWER classifier</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+ 
+    <div class="container">
+        <h1>FLOWER CLASSIFIER</h1>
+        <p>Please upload a flower picture to get the color class</p>
+ 
+        <form action="index.php" method="post" enctype="multipart/form-data">
+            <input type="file" name="image" accept=".jpg,.jpeg,.png" required>
+            <button type="submit">Analyze image</button>
+        </form>
+ 
+        <?php if ($error): ?>
+            <p class="error"><?= htmlspecialchars($error) ?></p>
+        <?php endif; ?>
+ 
+        <?php if ($result): ?>
+            <div class="result">
+                <img src="<?= htmlspecialchars($result["image_path"]) ?>" alt="Uploaded image">
+ 
+                <h2>Result</h2>
+ 
+                <?php foreach ($result["predictions"] as $p): ?>
+                    <p>
+                        <strong><?= htmlspecialchars($p["model_name"]) ?>:</strong>
+                        <?= htmlspecialchars($p["predicted_class"]) ?>
+                        (<?= round($p["probability"] * 100, 1) ?>% of probability)
+                    </p>
+                <?php endforeach; ?>
+            </div>
+        <?php endif; ?>
+ 
+    </div>
+ 
+</body>
+</html>
